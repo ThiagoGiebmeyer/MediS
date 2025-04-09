@@ -3,6 +3,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+import matplotlib.pyplot as plt
 import os
 
 # Caminho do dataset
@@ -61,15 +62,39 @@ if not os.path.exists("model"):
 
 callbacks = [
     EarlyStopping(patience=5, restore_best_weights=True),
-    ModelCheckpoint("model/model_soja.h5", save_best_only=True)
+    ModelCheckpoint("models/model_soja.h5", save_best_only=True)
 ]
 
 # Treinamento
-model.fit(
+history = model.fit(
     train_gen,
-    validation_data=val_gen,
     epochs=EPOCHS,
+    validation_data=val_gen,
     callbacks=callbacks
 )
 
-print("✅ Treinamento finalizado e modelo salvo em: model/model_soja.h5")
+print("✅ Treinamento finalizado e modelo salvo em: models/model_soja.h5")
+
+# Curva de aprendizado
+plt.figure(figsize=(12, 5))
+
+# Loss
+plt.subplot(1, 2, 1)
+plt.plot(history.history['loss'], label='Treinamento')
+plt.plot(history.history['val_loss'], label='Validação')
+plt.title('Função de Perda (Loss)')
+plt.xlabel('Época')
+plt.ylabel('Loss')
+plt.legend()
+
+# Accuracy
+plt.subplot(1, 2, 2)
+plt.plot(history.history['accuracy'], label='Treinamento')
+plt.plot(history.history['val_accuracy'], label='Validação')
+plt.title('Acurácia')
+plt.xlabel('Época')
+plt.ylabel('Accuracy')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
