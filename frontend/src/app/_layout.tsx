@@ -7,12 +7,12 @@ import { useEffect } from 'react';
 
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { Geist_400Regular } from '@expo-google-fonts/geist/400Regular';
 import { Geist_600SemiBold } from '@expo-google-fonts/geist/600SemiBold';
 import { Geist_700Bold } from '@expo-google-fonts/geist/700Bold';
 
 import '../global.css';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 SplashScreen.preventAutoHideAsync();
 
