@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import CamSensores from "../models/camSensores.model";
+import { CamSensores } from "../models/camSensores.model";
 
 export const criarLeituraSensor = async (req: Request, res: Response) => {
   try {

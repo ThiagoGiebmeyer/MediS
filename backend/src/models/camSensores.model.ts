@@ -1,40 +1,39 @@
-import { DataTypes } from "sequelize";
-import sequelize from "../config/database";
-import Cam from "./cam.model";
+import { Model, DataTypes, Sequelize } from "sequelize";
+import { Cams } from "./cams.model";
 
-const CamSensores = sequelize.define(
-  "CamSensores",
-  {
-    ID: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-    },
-    DHT11_temperatura: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
-    },
-    DHT11_umidade: {
-      type: DataTypes.FLOAT,
-      allowNull: false,
-    },
-    camId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: Cam,
-        key: "ID",
+export class CamSensores extends Model {
+  public id!: number;
+  public temperatura!: number;
+  public umidade!: number;
+  public camId!: number;
+}
+
+export const initCamSensoresModel = (sequelize: Sequelize) => {
+  CamSensores.init(
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      temperatura: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+      },
+      umidade: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+      },
+      camId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
       },
     },
-  },
-  {
-    tableName: "CAM_SENSORES",
-    timestamps: true,
-    createdAt: "criadoEm",
-    updatedAt: "alteradoEm",
-  }
-);
+    {
+      sequelize,
+      tableName: "CAMS_SENSORES",
+    }
+  );
 
-CamSensores.belongsTo(Cam, { foreignKey: "camId" });
-
-export default CamSensores;
+  CamSensores.belongsTo(Cams, { foreignKey: "camId" });
+};

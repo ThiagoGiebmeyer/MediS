@@ -2,11 +2,7 @@ import express from "express";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger";
 
-import usuarioRoutes from "./routes/usuario.routes";
-import camRoutes from "./routes/cam.routes";
-import imagemRoutes from "./routes/imagem.routes";
-import camSensoresRoutes from "./routes/camSensores.routes";
-import authRoutes from "./routes/authRoutes";
+import routes from "./routes"; // <-- importando todas as rotas agrupadas
 
 const app = express();
 
@@ -21,11 +17,6 @@ app.get("/", (req, res) => {
 
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.use('/api/auth', authRoutes);
-
-app.use("/usuarios", usuarioRoutes);
-app.use("/cams", camRoutes);
-app.use("/imagens", imagemRoutes);
-app.use("/sensores", camSensoresRoutes);
+app.use("/api", routes);
 
 export default app;

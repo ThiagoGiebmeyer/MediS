@@ -1,4 +1,6 @@
-export const jwtConfig = {
-  secret: process.env.API_SECRET || "",
-  expiresIn: "1h",
+import { Secret } from "jsonwebtoken";
+
+export const jwtConfig: { secret: Secret; expiresIn: string | number } = {
+  secret: "sua_chave_secreta",     
+  expiresIn: "1h",                  
 };
