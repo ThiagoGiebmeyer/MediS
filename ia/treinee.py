@@ -10,7 +10,7 @@ import os
 DATASET_DIR = "datasets/soja"
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
-EPOCHS = 20
+EPOCHS = 2
 
 # Geradores de imagens com aumento de dados
 datagen = ImageDataGenerator(
