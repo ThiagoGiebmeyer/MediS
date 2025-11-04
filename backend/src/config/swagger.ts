@@ -8,7 +8,7 @@ const options: swaggerJsdoc.Options = {
       title: "API de Monitoramento de Plantas 🌱",
       version: "1.0.0",
       description:
-        "Documentação da API de analise de crescimento e desenvolvimento da soja",
+        "Documentação da MediS - API de analise de crescimento e desenvolvimento da soja",
     },
     servers: [
       {

@@ -21,13 +21,13 @@ const MONGO_URI = process.env.DB_URL || "";
 
     initModels(sequelize);
 
-    await sequelize.sync({ alter: true }); 
+    await sequelize.sync({ alter: true });
     console.log("✅ Sequelize sincronizado");
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`🚀 MediS - API inicializada em: http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error("❌ Erro ao iniciar a aplicação:", error);
+    console.error("❌ Erro ao iniciar a MediS - API:", error);
   }
 })();

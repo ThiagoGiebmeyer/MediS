@@ -16,7 +16,7 @@ app.use(
 
 app.get("/", (req, res) => {
   res.json({
-    message: "🚀 API de Monitoramento de Soja",
+    message: "🚀 MediS - API",
     docs: "/docs",
   });
 });
