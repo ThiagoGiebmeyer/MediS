@@ -1,9 +1,7 @@
 import app from "./app";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { createDatabaseIfNotExists } from "./utils/createDatabase";
-import { createSequelizeInstance } from "./config/database";
-import { initModels } from "./models/initModels";
+import { initModels } from "./database/models/initModels";
 
 dotenv.config();
 
@@ -13,16 +11,9 @@ const MONGO_URI = process.env.DB_URL || "";
 (async () => {
   try {
     await mongoose.connect(MONGO_URI);
-    console.log("✅ Conectado ao MongoDB");
+    console.log("✅ Conectado ao MongoDB em: ", MONGO_URI);
 
-    await createDatabaseIfNotExists();
-
-    const sequelize = createSequelizeInstance();
-
-    initModels(sequelize);
-
-    await sequelize.sync({ alter: true });
-    console.log("✅ Sequelize sincronizado");
+    initModels();
 
     app.listen(PORT, () => {
       console.log(`🚀 MediS - API inicializada em: http://localhost:${PORT}`);

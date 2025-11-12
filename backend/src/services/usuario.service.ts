@@ -1,5 +1,5 @@
-import { Usuarios } from "../models/usuarios.model"; // Ajuste conforme sua estrutura
+import { Usuario } from "../database/models/usuarios.model";
 
 export const getUserByEmail = async (email: string) => {
-  return await Usuarios.findOne({ where: { email } });
+  return await Usuario.findOne({ email });
 };

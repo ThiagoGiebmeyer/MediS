@@ -8,7 +8,9 @@ export const authenticateToken = (
   next: NextFunction
 ): void => {
   const authHeader = req.headers["authorization"];
-  const token = authHeader;
+  const token = authHeader && authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : authHeader;
 
   if (!token) {
     res.status(401).json({ message: "Token não fornecido" });
