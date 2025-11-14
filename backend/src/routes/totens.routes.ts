@@ -10,7 +10,7 @@ router.use(authenticateToken);
  * @swagger
  * /api/totem:
  *   post:
- *     summary: Criar novo toten de monitoramento
+ *     summary: Criar novo totem de monitoramento
  *     tags:
  *       - Totens
  *     security:
@@ -24,7 +24,7 @@ router.use(authenticateToken);
  *             properties:
  *               nome:
  *                 type: string
- *                 example: Toten Soja 01
+ *                 example: Totem Soja 01
  *               localizacao:
  *                 type: string
  *                 example: Campo A
@@ -36,7 +36,7 @@ router.use(authenticateToken);
  *               - localizacao
  *     responses:
  *       201:
- *         description: Toten criado com sucesso
+ *         description: Totem criado com sucesso
  *         content:
  *           application/json:
  *             schema:
@@ -62,7 +62,7 @@ router.use(authenticateToken);
  *                       ativo:
  *                         type: boolean
  *       400:
- *         description: Erro ao criar toten
+ *         description: Erro ao criar totem
  *       401:
  *         description: Não autorizado - token não fornecido ou inválido
  *       500:

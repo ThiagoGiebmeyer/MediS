@@ -1,19 +1,16 @@
 import app from "./app";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { initModels } from "./database/models/initModels";
 
 dotenv.config();
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const MONGO_URI = process.env.DB_URL || "";
 
 (async () => {
   try {
     await mongoose.connect(MONGO_URI);
     console.log("✅ Conectado ao MongoDB em: ", MONGO_URI);
-
-    initModels();
 
     app.listen(PORT, () => {
       console.log(`🚀 MediS - API inicializada em: http://localhost:${PORT}`);

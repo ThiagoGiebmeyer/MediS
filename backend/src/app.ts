@@ -14,10 +14,15 @@ app.use(
   })
 );
 
-app.use("/", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
+
 app.options("*", cors());
+
+// ✅ Suas rotas de API devem vir ANTES do Swagger
 app.use("/api", routes);
+
+// ✅ Swagger deve ficar por último
+app.use("/", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 export default app;

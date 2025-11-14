@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { createSensorReading } from "../controllers/totens_coletas.controller";
+import {
+  createSensorReading,
+  getAllReadings,
+  getLastReading,
+  getReadingStats
+} from "../controllers/totens_coletas.controller";
 import { authenticateToken } from "../middlewares/authMiddleware";
 
 const router = Router();
@@ -10,7 +15,7 @@ router.use(authenticateToken);
  * @swagger
  * /api/totem/reading:
  *   post:
- *     summary: Registrar nova leitura de sensor de um toten
+ *     summary: Registrar nova leitura de sensor de um totem
  *     tags:
  *       - Leituras de Sensores
  *     security:
@@ -82,6 +87,19 @@ router.use(authenticateToken);
  *       500:
  *         description: Erro interno no servidor
  */
+
+router.use(authenticateToken);
+
+// Criar leitura
 router.post("/", createSensorReading);
+
+// Listar todas as leituras
+router.get("/", getAllReadings);
+
+// Última leitura
+router.get("/last", getLastReading);
+
+// Estatísticas
+router.get("/stats", getReadingStats);
 
 export default router;

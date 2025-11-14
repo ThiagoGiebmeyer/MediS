@@ -31,8 +31,7 @@ const totenSchema = new Schema<IToten>(
   },
   {
     timestamps: { createdAt: "criado_em", updatedAt: "alterado_em" },
-    collection: "totens",
   }
 );
 
-export const Toten = model<IToten>("totens", totenSchema);
+export const Totem = model<IToten>("totens", totenSchema);

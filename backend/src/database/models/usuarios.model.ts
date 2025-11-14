@@ -31,7 +31,6 @@ const usuarioSchema = new Schema<IUsuario>(
   },
   {
     timestamps: { createdAt: "criado_em", updatedAt: "alterado_em" },
-    collection: "usuarios",
   }
 );
 

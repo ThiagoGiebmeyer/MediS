@@ -23,7 +23,8 @@ export const authenticateToken = (
       return;
     }
 
-    req.body.userId = (decoded as any).userId;
+    (req as any).user = { id: (decoded as any).userId };
+
     next();
   });
 };

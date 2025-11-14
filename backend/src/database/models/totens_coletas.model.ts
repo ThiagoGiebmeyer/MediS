@@ -5,6 +5,8 @@ export interface ITotenColeta {
   umidade: number;
   imagem: string;
   estagio?: string;
+  data_coleta?: string;
+  hora_coleta?: string;
   totem_id: Types.ObjectId;
   criado_em?: Date;
   alterado_em?: Date;
@@ -28,6 +30,14 @@ const totenColetaSchema = new Schema<ITotenColeta>(
       type: String,
       required: false,
     },
+    data_coleta: {
+      type: String,
+      required: true,
+    },
+    hora_coleta: {
+      type: String,
+      required: true,
+    },
     totem_id: {
       type: Schema.Types.ObjectId,
       ref: "totens",
@@ -36,7 +46,6 @@ const totenColetaSchema = new Schema<ITotenColeta>(
   },
   {
     timestamps: { createdAt: "criado_em", updatedAt: "alterado_em" },
-    collection: "totens_coletas",
   }
 );
 

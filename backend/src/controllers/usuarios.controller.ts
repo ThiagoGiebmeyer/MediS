@@ -7,7 +7,6 @@ import { getUserByEmail } from "../services/usuario.service";
 
 export const login = async (req: Request, res: Response) => {
   const { email, senha } = req.body;
-
   if (!email || !senha) {
     return res.status(400).json({
       error: true,
@@ -67,7 +66,6 @@ export const login = async (req: Request, res: Response) => {
 export const register = async (req: Request, res: Response) => {
   try {
     const { nome, sobrenome, email, senha } = req.body;
-
     if (!nome || !sobrenome || !email || !senha) {
       return res.status(400).json({
         error: true,
