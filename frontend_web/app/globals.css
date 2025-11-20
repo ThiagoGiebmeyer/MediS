@@ -1,19 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --card: #ffffff;
+  --background: #282C31;
+  --text: #282C31;
+  --text-button: #F4F4F4;
+  --border: #282C31;
+  --foreground: #F4F4F4;
+  --card: #202226;
+  --card-alt: #23262Bcc;
   --primary: #00FF99;
   --primary-dark: #00CC66;
   --muted: #8A8F98;
-  --input-bg: #f8f8f8;
-  --input-border: #ccc;
-  --input-text: #171717;
+  --input-bg: #202226;
+  --input-border: #8A8F98;
+  --input-text: #F4F4F4;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-text: var(--text);
+  --color-text-button: var(--text-button);
+  --color-border: var(--border);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-primary: var(--primary);
@@ -26,20 +33,28 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #282C31;
-    --foreground: #F4F4F4;
-    --card: #202226;
-    --card-alt: #23262Bcc;
-    --primary: #00FF99;
-    --primary-dark: #00CC66;
-    --muted: #8A8F98;
-    --input-bg: #202226;
-    --input-border: #8A8F98;
-    --input-text: #F4F4F4;
-  }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Remove os botões do tipo number no Chrome, Edge, Safari */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Remove os botões no Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 
 body {
   background: var(--background);

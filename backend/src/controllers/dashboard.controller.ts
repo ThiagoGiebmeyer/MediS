@@ -29,7 +29,6 @@ export const getDashboardData = async (req: Request, res: Response) => {
     // Buscar totens vinculados ao usuário
     const totens = await Totem.find(
       { usuario_id: userId },
-      { _id: 1, nome: 1, localizacao: 1 }
     );
 
     if (totens.length === 0) {

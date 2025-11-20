@@ -6,6 +6,23 @@ import routes from "./routes";
 
 const app = express();
 
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log(`Content-Length: ${req.headers['content-length']}`);
+  console.log(`Content-Type: ${req.headers['content-type']}`);
+
+  // Log quando body é muito grande
+  let receivedBytes = 0;
+  req.on('data', (chunk) => {
+    receivedBytes += chunk.length;
+    if (receivedBytes % 50000 === 0) {
+      console.log(`Received ${receivedBytes} bytes...`);
+    }
+  });
+
+  next();
+});
+
 app.use(
   cors({
     origin: "*",

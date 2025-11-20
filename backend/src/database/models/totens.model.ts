@@ -4,6 +4,7 @@ export interface IToten {
   nome: string;
   latitude?: string;
   longitude?: string;
+  intervalo_coleta?: number;
   usuario_id: Types.ObjectId;
   criado_em?: Date;
   alterado_em?: Date;
@@ -22,6 +23,11 @@ const totenSchema = new Schema<IToten>(
     longitude: {
       type: String,
       required: false,
+    },
+    intervalo_coleta: {
+      type: Number,
+      required: false,
+      default: 60,
     },
     usuario_id: {
       type: Schema.Types.ObjectId,

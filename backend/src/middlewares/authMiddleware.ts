@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { jwtConfig } from "../config/jwt";
+import jwt, { TokenExpiredError } from "jsonwebtoken";
+import { jwtConfig, TOTEM_STATIC_TOKEN } from "../config/jwt";
 
 export const authenticateToken = (
   req: Request,
@@ -12,19 +12,30 @@ export const authenticateToken = (
     ? authHeader.slice(7)
     : authHeader;
 
+
   if (!token) {
     res.status(401).json({ message: "Token não fornecido" });
     return;
   }
 
-  jwt.verify(token, jwtConfig.secret, (err, decoded) => {
-    if (err) {
-      res.status(403).json({ message: "Token inválido" });
-      return;
+  if (String(token).includes('medis_totem_')) {
+    if (token === TOTEM_STATIC_TOKEN) {
+      next();
     }
+  } else {
+    jwt.verify(token, jwtConfig.secret, (err, decoded) => {
+      if (err) {
+        if (err instanceof TokenExpiredError) {
+          res.status(401).json({ message: "Token expirado" });
+          return;
+        }
 
-    (req as any).user = { id: (decoded as any).userId };
+        res.status(403).json({ message: "Token inválido" });
+        return;
+      }
 
-    next();
-  });
+      (req as any).user = { id: (decoded as any).userId };
+      next();
+    });
+  }
 };

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { upload } from "../config/multer";
 import {
   createSensorReading,
   getAllReadings,
@@ -8,8 +9,6 @@ import {
 import { authenticateToken } from "../middlewares/authMiddleware";
 
 const router = Router();
-
-router.use(authenticateToken);
 
 /**
  * @swagger
@@ -91,7 +90,7 @@ router.use(authenticateToken);
 router.use(authenticateToken);
 
 // Criar leitura
-router.post("/", createSensorReading);
+router.post("/upload", createSensorReading);
 
 // Listar todas as leituras
 router.get("/", getAllReadings);

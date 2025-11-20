@@ -3,7 +3,14 @@ import { Totem } from "../database/models/totens.model";
 
 export const createTotem = async (req: Request, res: Response) => {
   try {
-    const totem = await Totem.create(req.body);
+    const userId = (req as any).user?.id;
+
+    const newTotem = {
+      ...req.body,
+      usuario_id: userId || ''
+    }
+    console.log("Creating totem with data:", newTotem);
+    const totem = await Totem.create(newTotem);
     res.status(201).json({
       error: false,
       messageError: "",

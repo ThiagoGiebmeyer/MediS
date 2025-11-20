@@ -36,7 +36,7 @@ async function runSeed() {
   // 🏢 Criar totem
   const totem = await Totem.create({
     nome: "Totem Central",
-    latitude: "-27.5511",
+    latitude: "-27.5311",
     longitude: "-48.4567",
     usuario_id: usuario._id,
   });
@@ -45,8 +45,9 @@ async function runSeed() {
 
   const totem2 = await Totem.create({
     nome: "Totem Secundário",
-    latitude: "-27.5511",
+    latitude: "-27.2311",
     longitude: "-48.4567",
+    intervalo_coleta: 30,
     usuario_id: usuario._id,
   });
 
@@ -54,7 +55,7 @@ async function runSeed() {
 
   const totem3 = await Totem.create({
     nome: "Totem Secundário",
-    latitude: "-27.5511",
+    latitude: "-27.8611",
     longitude: "-48.4567",
     usuario_id: usuario2._id,
   });
@@ -95,24 +96,7 @@ async function runSeed() {
     console.log("📊 Coleta criada:", coleta._id);
   }
 
-  for (const c of coletasData2) {
-    const coleta = await TotenColeta.create({
-      temperatura: c.temperatura,
-      umidade: c.umidade,
-      imagem: "imagem_base64_aqui",
-      estagio: c.estagio,
-      data_coleta: "2025-02-14",
-      hora_coleta: c.hora_coleta,
-      totem_id: totem2._id,
-    });
-
-    coletasCriadas2.push(coleta);
-    console.log("📊 Coleta criada:", coleta._id);
-  }
-
   console.log("Total de coletas criadas:", coletasCriadas.length);
-  console.log("Total de coletas 2 criadas:", coletasCriadas2.length);
-
 
   console.log("✅ SEED FINALIZADO!");
   await mongoose.disconnect();
