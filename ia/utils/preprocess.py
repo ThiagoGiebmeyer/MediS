@@ -38,5 +38,5 @@ def preprocess_image(img_bytes, target_size=(224, 224), min_width=100, min_heigh
         return image_array
 
     except Exception as e:
-        print(f"⚠️ Erro no pré-processamento: {e}")
+        print(f"⚠️ Inconsistência no pré-processamento: {e}")
         return None

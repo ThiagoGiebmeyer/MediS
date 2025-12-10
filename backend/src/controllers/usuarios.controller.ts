@@ -54,10 +54,10 @@ export const login = async (req: Request, res: Response) => {
       }]
     });
   } catch (error) {
-    console.error("Erro no login:", error);
+    console.error("Inconsistência no login:", error);
     res.status(500).json({
       error: true,
-      messageError: "Erro interno no servidor.",
+      messageError: "Inconsistência interno no servidor.",
       data: []
     });
   }
@@ -106,10 +106,10 @@ export const register = async (req: Request, res: Response) => {
       }]
     });
   } catch (error) {
-    console.error("Erro no cadastro:", error);
+    console.error("Inconsistência no cadastro:", error);
     res.status(500).json({
       error: true,
-      messageError: "Erro interno no servidor.",
+      messageError: "Inconsistência interno no servidor.",
       data: []
     });
   }

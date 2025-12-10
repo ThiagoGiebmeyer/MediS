@@ -48,4 +48,4 @@ for doc in documents:
         print(f"[✔] {doc['_id']} classificada como {predicted_label}")
 
     except Exception as e:
-        print(f"[x] Erro ao classificar {doc.get('_id')}: {str(e)}")
+        print(f"[x] Inconsistência ao classificar {doc.get('_id')}: {str(e)}")

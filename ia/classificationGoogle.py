@@ -37,7 +37,7 @@ try:
     print(f"🌱 Fase detectada: **{predicted_label}**")
 
 except Exception as e:
-    print(f"[x] Erro ao processar imagem: {str(e)}")
+    print(f"[x] Inconsistência ao processar imagem: {str(e)}")
 
 # Remover imagem baixada
 # os.remove(imagem_destino)

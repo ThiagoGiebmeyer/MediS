@@ -12,10 +12,15 @@
 #include "soc/rtc_cntl_reg.h"
 #include <mbedtls/base64.h>
 
+// --- CONFIGURAÇÕES DE SERVIDOR E API ---
 String serverHost = "";
 int serverPort = 3000;
-const char *serverPath = "/api/totem/reading/upload";
+const char *serverPath = "/api/totem/reading";
 
+// ✅ TOKEN
+const char *apiToken = "medis_totem_3952896fda05ebb26696c2ab87c08775624c0623d317cf9948fca362b48c6b1a";
+
+// --- Pinos da Câmera (AI Thinker ESP32-CAM) ---
 #define PWDN_GPIO_NUM 32
 #define RESET_GPIO_NUM -1
 #define XCLK_GPIO_NUM 0
@@ -39,9 +44,11 @@ const char *serverPath = "/api/totem/reading/upload";
 BLECharacteristic *pCharacteristic = nullptr;
 Preferences preferences;
 
+// Flags de Estado
 bool deviceConnected = false;
 bool shouldScanWifi = false;
 bool requestConnectionTest = false;
+bool systemConfigured = false;  // Define se opera em modo Câmera ou modo Config (BLE)
 
 String targetSSID = "";
 String targetPass = "";
@@ -157,9 +164,11 @@ void setupBLE() {
   pAdvertising->addServiceUUID(SERVICE_UUID);
   pAdvertising->setScanResponse(true);
   BLEDevice::startAdvertising();
+  Serial.println("BLE Initialized and Advertising (Config Mode)");
 }
 
 bool initCameraOnce() {
+  // Configuração da câmera
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -192,6 +201,7 @@ bool initCameraOnce() {
     config.fb_count = 1;
   }
 
+  // Inicializa a câmera
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
     Serial.printf("Camera init failed with error: 0x%x\n", err);
@@ -201,129 +211,134 @@ bool initCameraOnce() {
   return true;
 }
 
-
 String sendPhoto() {
-  Serial.println("--- Starting Upload (mbedtls Base64) ---");
+  Serial.println("\n--- Starting Multipart Upload ---");
 
-  if (WiFi.status() != WL_CONNECTED) return "Wifi Disconnected";
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Error: WiFi Disconnected");
+    return "Wifi Disconnected";
+  }
+  if (!cameraInitialized) {
+    Serial.println("Error: Camera Not Init");
+    return "Camera Not Init";
+  }
 
+  // Tira a foto
   camera_fb_t *fb = esp_camera_fb_get();
-  if (!fb) return "Capture Failed";
-  Serial.printf("Photo captured: %u bytes\n", fb->len);
+  if (!fb) {
+    Serial.println("Error: Capture Failed");
+    return "Capture Failed";
+  }
+  Serial.printf("Picture taken! Size: %d bytes\n", fb->len);
 
   WiFiClient client;
-  client.setTimeout(30000);  // Aumenta timeout para 30s
-  client.setNoDelay(true);   // Desabilita Nagle (envia imediatamente)
+  // AUMENTADO PARA 60s (Evita queda em redes lentas)
+  client.setTimeout(60000);
 
+  Serial.println("Connecting to server...");
   if (!client.connect(serverHost.c_str(), serverPort)) {
+    Serial.println("Error: Connection Failed");
     esp_camera_fb_return(fb);
     return "Connection Failed";
   }
-  Serial.println("Connected! Encoding with mbedtls...");
+  Serial.println("Connected! Sending headers...");
 
-  // 1. Calcula tamanho necessário para Base64
-  size_t outputLen = 0;
-  mbedtls_base64_encode(NULL, 0, &outputLen, fb->buf, fb->len);
+  String boundary = "--------------------------Ef1eF1eF1";
 
-  // 2. Aloca buffer para Base64
-  uint8_t *base64Buffer = (uint8_t *)ps_malloc(outputLen);
-  if (!base64Buffer) {
-    Serial.println("Failed to allocate Base64 buffer");
-    esp_camera_fb_return(fb);
-    client.stop();
-    return "Memory Error";
-  }
+  // Cabeçalho dos metadados
+  String bodyHead = "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"totem_id\"\r\n\r\n" + totemID + "\r\n" + "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"temperatura\"\r\n\r\n25.50\r\n" + "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"umidade\"\r\n\r\n60.00\r\n";
 
-  // 3. Codifica para Base64 (RÁPIDO!)
-  unsigned long startEncode = millis();
-  int ret = mbedtls_base64_encode(base64Buffer, outputLen, &outputLen, fb->buf, fb->len);
-  Serial.printf("Base64 encoded in %lu ms\n", millis() - startEncode);
+  // Cabeçalho do arquivo
+  String fileHead = "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"image\"; filename=\"capture.jpg\"\r\n" + "Content-Type: image/jpeg\r\n\r\n";
 
-  if (ret != 0) {
-    Serial.printf("ERROR: mbedtls_base64_encode failed with code: %d\n", ret);
-    free(base64Buffer);
-    esp_camera_fb_return(fb);
-    client.stop();
-    return "Encode Error";
-  }
+  // Fechamento
+  String bodyTail = "\r\n--" + boundary + "--\r\n";
 
-  // Verifica se conexão ainda está ativa
-  if (!client.connected()) {
-    Serial.println("ERROR: Connection lost after encoding");
-    free(base64Buffer);
-    esp_camera_fb_return(fb);
-    return "Connection Lost";
-  }
+  size_t totalLen = bodyHead.length() + fileHead.length() + fb->len + bodyTail.length();
 
-  // 4. Prepara JSON
-  String jsonHead = "{\"temperatura\":\"25.50\",\"umidade\":\"60.00\",\"totem_id\":\"" + totemID + "\",\"image\":\"";
-  String jsonTail = "\"}";
-  size_t totalLen = jsonHead.length() + outputLen + jsonTail.length();
-
-  // 5. Envia HTTP Headers
+  // Envio HTTP Headers
   client.print("POST " + String(serverPath) + " HTTP/1.1\r\n");
   client.print("Host: " + serverHost + ":" + String(serverPort) + "\r\n");
-  client.print("Authorization: Bearer medis_totem_3952896fda05ebb26696c2ab87c08775624c0623d317cf9948fca362b48c6b1a\r\n");
-  client.print("Content-Type: application/json\r\n");
+  client.print("Authorization: Bearer " + String(apiToken) + "\r\n");
   client.print("Content-Length: " + String(totalLen) + "\r\n");
+  client.print("Content-Type: multipart/form-data; boundary=" + boundary + "\r\n");
   client.print("Connection: close\r\n\r\n");
 
-  // 6. Envia JSON Head
-  size_t written = client.print(jsonHead);
-  Serial.printf("JSON head sent: %d bytes\n", written);
+  // Envio Corpo (Metadados + Header Arquivo)
+  client.print(bodyHead);
+  client.print(fileHead);
 
-  // 7. Envia Base64 em chunks (com feedback)
-  size_t sent = 0;
-  const size_t chunkSize = 1460;  // MTU TCP otimizado
-  unsigned long lastPrint = millis();
+  // --- OTIMIZAÇÃO DE ENVIO DA IMAGEM ---
+  Serial.println("Sending image data...");
+  uint8_t *fbBuf = fb->buf;
+  size_t fbLen = fb->len;
 
-  while (sent < outputLen) {
-    size_t toSend = min(chunkSize, outputLen - sent);
-    size_t actualSent = client.write(base64Buffer + sent, toSend);
+  // Buffer de 4KB (Muito mais rápido que 1KB)
+  const size_t bufferSize = 4096;
+  uint8_t *buffer = (uint8_t *)malloc(bufferSize);
 
-    if (actualSent == 0) {
-      Serial.println("ERROR: Failed to send data");
-      break;
+  if (buffer) {
+    // Modo Copia Segura
+    while (fbLen > 0) {
+      size_t toSend = (fbLen > bufferSize) ? bufferSize : fbLen;
+      memcpy(buffer, fbBuf, toSend);  // Copia para buffer local (opcional, mas estável)
+
+      size_t written = client.write(buffer, toSend);
+
+      if (written != toSend) {
+        Serial.println("Error: Upload interrupted/failed writing to client");
+        free(buffer);
+        esp_camera_fb_return(fb);
+        client.stop();
+        return "Write Error";
+      }
+
+      fbBuf += toSend;
+      fbLen -= toSend;
+      // Delay removido para máxima velocidade
     }
-
-    sent += actualSent;
-
-    // Feedback a cada 20KB
-    if (millis() - lastPrint > 1000) {
-      Serial.printf("Sent: %d/%d bytes (%.1f%%)\n", sent, outputLen, (sent * 100.0) / outputLen);
-      lastPrint = millis();
-    }
-
-    // Pequeno delay para não sobrecarregar
-    if (sent % (chunkSize * 10) == 0) {
-      delay(1);
+    free(buffer);
+  } else {
+    // Fallback se faltar memória (envia direto do ponteiro da camera)
+    while (fbLen > 0) {
+      size_t toSend = (fbLen > 1024) ? 1024 : fbLen;
+      client.write(fbBuf, toSend);
+      fbBuf += toSend;
+      fbLen -= toSend;
     }
   }
 
-  Serial.printf("Base64 sent: %d bytes\n", sent);
+  client.print(bodyTail);
+  esp_camera_fb_return(fb);
+  Serial.println("Data sent. Waiting for response...");
 
-  // 8. Envia JSON Tail
-  written = client.print(jsonTail);
-  Serial.printf("JSON tail sent: %d bytes\n", written);
-  Serial.println("Stream completed. Waiting response...");
+  // Aguarda resposta
+  long timeout = millis() + 20000;
+  String response = "";
+  bool responseStarted = false;
 
-  // 9. Lê resposta
-  long timeout = millis() + 10000;
   while (millis() < timeout) {
-    while (client.available()) {
-      String line = client.readStringUntil('\n');
-      if (line.startsWith("HTTP/1.1")) Serial.println("SERVER: " + line);
+    if (client.available()) {
+      responseStarted = true;
+      char c = client.read();
+      response += c;
+    } else if (responseStarted && !client.connected()) {
+      break;
     }
-    if (!client.connected() && !client.available()) break;
     delay(10);
   }
 
-  // 10. Cleanup
-  free(base64Buffer);
-  esp_camera_fb_return(fb);
   client.stop();
-  Serial.println("--- Done ---");
-  return "Ok";
+
+  if (response.length() > 0) {
+    Serial.println("--- Server Response ---");
+    Serial.println(response);
+    Serial.println("-----------------------");
+    return "Ok";
+  } else {
+    Serial.println("Error: No response from server (Timeout)");
+    return "Timeout";
+  }
 }
 
 void executeConnectionTest() {
@@ -362,8 +377,9 @@ void executeConnectionTest() {
     preferences.putInt("interval", coletaIntervalo);
     preferences.end();
 
-    Serial.println("Config saved. Restarting in 3s...");
-    delay(3000);
+    // Requisito 3: Reiniciar após 5s
+    Serial.println("Config saved. Restarting in 5s...");
+    delay(5000);
     ESP.restart();
   } else {
     Serial.println("BLE test connect: FAILED.");
@@ -378,8 +394,14 @@ void executeConnectionTest() {
 }
 
 void setup() {
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+
   Serial.begin(115200);
   delay(100);
+
+  // Garante câmera desligada no boot
+  pinMode(PWDN_GPIO_NUM, OUTPUT);
+  digitalWrite(PWDN_GPIO_NUM, HIGH);
 
   preferences.begin("totem-config", true);
   String savedSSID = preferences.getString("ssid", "");
@@ -390,55 +412,69 @@ void setup() {
   coletaIntervalo = preferences.getInt("interval", 2);
   preferences.end();
 
-  Serial.println(totemID.length() > 0 ? "Config Loaded: " + totemID : "No config found.");
-
-  setupBLE();
-  Serial.println("BLE Active");
-
   WiFi.mode(WIFI_STA);
   WiFi.disconnect(true);
   delay(300);
 
+  // --- LÓGICA DE INICIALIZAÇÃO CONDICIONAL ---
   if (savedSSID.length() > 0) {
+    // CASO 2: Configuração Salva -> Inicia WiFi e Câmera. SEM BLE.
+    Serial.println("System Configured. Starting WIFI + CAMERA (No BT).");
+    systemConfigured = true;
+
     targetSSID = savedSSID;
     targetPass = savedPass;
     bootState = TRY_CONNECTING;
     lastAutoTry = 0;
+
+    // Nota: O initCameraOnce será chamado no loop() assim que o WiFi conectar
+    // para evitar picos de corrente na inicialização.
+
   } else {
+    // CASO 1: Sem Configuração -> Inicia BLE e WiFi (scan). SEM CAMERA.
+    Serial.println("No Config Found. Starting BT + WIFI (No Camera).");
+    systemConfigured = false;
     bootState = NO_CONFIG;
+
+    setupBLE();
   }
 }
 
 void loop() {
   checkSerialCommand();
 
-  if (shouldScanWifi) {
-    shouldScanWifi = false;
-    WiFi.disconnect();
-    delay(100);
-    Serial.println("Starting WiFi Scan...");
-    int n = WiFi.scanNetworks();
-    String json = "[";
-    int count = 0;
-    for (int i = 0; i < n; ++i) {
-      if (count >= 8) break;
-      if (count > 0) json += ",";
-      String ssid = WiFi.SSID(i);
-      ssid.replace("\"", "");
-      json += "{\"ssid\":\"" + ssid + "\",\"rssi\":" + String(WiFi.RSSI(i)) + ",\"secure\":" + ((WiFi.encryptionType(i) == WIFI_AUTH_OPEN) ? "false" : "true") + "}";
-      count++;
+  // --- Lógica BLE e Scan (Apenas se NÃO estiver configurado) ---
+  if (!systemConfigured) {
+
+    if (shouldScanWifi) {
+      shouldScanWifi = false;
+      WiFi.disconnect();
+      delay(100);
+      Serial.println("Starting WiFi Scan...");
+      int n = WiFi.scanNetworks();
+      String json = "[";
+      int count = 0;
+      for (int i = 0; i < n; ++i) {
+        if (count >= 8) break;
+        if (count > 0) json += ",";
+        String ssid = WiFi.SSID(i);
+        ssid.replace("\"", "");
+        json += "{\"ssid\":\"" + ssid + "\",\"rssi\":" + String(WiFi.RSSI(i)) + ",\"secure\":" + ((WiFi.encryptionType(i) == WIFI_AUTH_OPEN) ? "false" : "true") + "}";
+        count++;
+      }
+      json += "]";
+      if (pCharacteristic) pCharacteristic->setValue((uint8_t *)json.c_str(), json.length());
+      Serial.println("WiFi Scan completed.");
     }
-    json += "]";
-    if (pCharacteristic) pCharacteristic->setValue((uint8_t *)json.c_str(), json.length());
-    Serial.println("WiFi Scan completed.");
+
+    if (requestConnectionTest) {
+      requestConnectionTest = false;
+      executeConnectionTest();
+    }
   }
 
-  if (requestConnectionTest) {
-    requestConnectionTest = false;
-    executeConnectionTest();
-  }
-
-  if (bootState == TRY_CONNECTING) {
+  // --- Lógica de Conexão WiFi (Apenas se estiver Configurado) ---
+  if (systemConfigured && bootState == TRY_CONNECTING) {
     unsigned long now = millis();
     if (now - lastAutoTry >= AUTO_RETRY_MS) {
       lastAutoTry = now;
@@ -464,13 +500,24 @@ void loop() {
     }
   }
 
-  if (WiFi.status() == WL_CONNECTED && !cameraInitialized) {
-    if (initCameraOnce()) cameraInitialized = true;
+  // --- LÓGICA DA CÂMERA (Apenas se estiver Configurado) ---
+  // A variável systemConfigured garante que a câmera não inicie no modo BLE
+  if (systemConfigured && WiFi.status() == WL_CONNECTED && !cameraInitialized) {
+    Serial.println("WiFi Stable. Waiting for power stabilization before Camera Init...");
+    delay(500);
+
+    if (initCameraOnce()) {
+      cameraInitialized = true;
+    } else {
+      Serial.println("Camera Init Failed. Will retry next loop if Wifi stays on.");
+      delay(2000);
+    }
   }
 
-  if (WiFi.status() == WL_CONNECTED && totemID.length() > 0 && serverHost.length() > 0 && cameraInitialized) {
+  // Envio de Foto (Apenas se estiver Configurado e Câmera OK)
+  if (systemConfigured && WiFi.status() == WL_CONNECTED && totemID.length() > 0 && serverHost.length() > 0 && cameraInitialized) {
     unsigned long now = millis();
-    unsigned long intervalMs = (unsigned long)1 * 60000;
+    unsigned long intervalMs = (unsigned long)coletaIntervalo * 60000;
     if (intervalMs == 0) intervalMs = 60000;
     if (now - lastCaptureTime >= intervalMs) {
       sendPhoto();

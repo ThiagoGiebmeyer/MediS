@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createTotem } from "../controllers/totens.controller";
+import { createTotem, getConfig } from "../controllers/totens.controller";
 import { authenticateToken } from "../middlewares/authMiddleware";
 
 const router = Router();
@@ -62,12 +62,13 @@ router.use(authenticateToken);
  *                       ativo:
  *                         type: boolean
  *       400:
- *         description: Erro ao criar totem
+ *         description: Inconsistência ao criar totem
  *       401:
  *         description: Não autorizado - token não fornecido ou inválido
  *       500:
- *         description: Erro interno no servidor
+ *         description: Inconsistência interna no servidor
  */
 router.post("/", createTotem);
+router.get("/config", getConfig);
 
 export default router;

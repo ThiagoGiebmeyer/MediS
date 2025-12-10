@@ -103,6 +103,6 @@ async function runSeed() {
 }
 
 runSeed().catch((err) => {
-  console.error("Erro no seed:", err);
+  console.error("Inconsistência no seed:", err);
   mongoose.disconnect();
 });

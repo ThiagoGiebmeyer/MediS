@@ -1,4 +1,4 @@
-import api from "./api";
+import api from "../api";
 import { ApiResponse, NewTotemDTO, Totem } from "@/types";
 
 export async function postNewTotem(

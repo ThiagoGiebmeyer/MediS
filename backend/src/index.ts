@@ -17,6 +17,6 @@ const MONGO_URI = process.env.DB_URL || "";
       console.log(`🚀 MediS - API acessível externamente em: http://0.0.0.0:${PORT}`);
     });
   } catch (error) {
-    console.error("❌ Erro ao iniciar a MediS - API:", error);
+    console.error("❌ Inconsistência ao iniciar a MediS - API:", error);
   }
 })();

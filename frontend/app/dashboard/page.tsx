@@ -1,21 +1,21 @@
 "use client";
 
 import {
+  AlertCircle,
   BarChart2,
   Bluetooth,
-  Cog,
-  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
   Lock,
   Map as MapIcon,
+  MapPin,
   Paperclip,
   Plus,
   RefreshCcw,
   Wifi,
-  Check,
-  MapPin,
-  AlertCircle,
-  Eye,
-  EyeOff
+  X
 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -30,8 +30,7 @@ import {
   YAxis
 } from "recharts";
 
-import { getDashboardData } from "@/services/dashboard";
-import { postNewTotem } from "@/services/totem";
+import { getDashboardData, postNewTotem } from "@/services/index";
 import { Totem } from "@/types";
 import { isTokenExpired } from "@/utils";
 import dynamic from 'next/dynamic';
@@ -86,6 +85,7 @@ interface Navigator {
 interface Measurement {
   temperatura: number;
   umidade: number;
+  imagem: string;
   criado_em: string;
 }
 
@@ -158,7 +158,6 @@ const AddTotemModal = ({
       setWifiList([]);
       setIsSendingWifi(false);
       setShowPassword(false);
-      // Gera um ID novo sempre que abre o modal
       setGeneratedTotemId(generateMongoObjectId());
     }
   }, [isOpen]);
@@ -175,14 +174,16 @@ const AddTotemModal = ({
       setIsConnecting(true);
 
       const device = await nav.bluetooth.requestDevice({
-        filters: [{ services: [SERVICE_UUID] }]
+        filters: [{ services: [SERVICE_UUID] }],
+        optionalServices: [SERVICE_UUID]
       });
 
       const server = await device.gatt?.connect();
+      console.log(device.name || device.id);
       if (!server) throw new Error("Falha no servidor GATT");
 
       setConnectedDevice(device);
-      toast.success(`Conectado ao hardware: ${device.name}`);
+      toast.success(`Conectado!`);
 
       const service = await server.getPrimaryService(SERVICE_UUID);
       const characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
@@ -211,14 +212,14 @@ const AddTotemModal = ({
         }
       } catch (e) {
         console.error("JSON inválido:", jsonString);
-        toast.error("Erro ao ler lista de Wi-Fi. Tente novamente.");
+        toast.error("Inconsistência ao ler lista de Wi-Fi. Tente novamente.");
       }
 
     } catch (error: any) {
       console.error(error);
       if (error.name !== 'NotFoundError') {
         setConnectedDevice(null);
-        toast.error("Erro de conexão Bluetooth.");
+        toast.error("Inconsistência de conexão Bluetooth.");
       }
     } finally {
       setIsConnecting(false);
@@ -305,7 +306,7 @@ const AddTotemModal = ({
 
     } catch (error) {
       console.error(error);
-      toast.error("Erro de comunicação.");
+      toast.error("Inconsistência de comunicação.");
       setStep("wifi");
       setIsSendingWifi(false);
     }
@@ -356,10 +357,24 @@ const AddTotemModal = ({
             <button
               onClick={handleScanBluetooth}
               disabled={isConnecting}
-              className="flex justify-center items-center gap-2 bg-card hover:bg-primary-dark disabled:opacity-50 px-4 py-2 border border-primary-dark rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer"
+              className={`
+              flex justify-center items-center gap-2 
+              bg-card hover:bg-primary-dark 
+              disabled:pointer-events-none
+              disabled:opacity-50
+              px-4 py-2 border border-primary-dark rounded-lg 
+              w-full font-semibold text-text-button hover:text-text 
+              transition-colors
+            `}
             >
+
               {isConnecting ? (
-                <><Loader2 className="animate-spin" /> {connectedDevice ? "Buscando redes Wi-Fi..." : "Conectando..."}</>
+                <div className='flex flex-row gap-4'>
+                  <div className="flex justify-center items-center">
+                    <div className="border-primary-dark border-b-2 rounded-full w-4 h-4 animate-spin"></div>
+                  </div>
+                  {connectedDevice ? "Buscando redes Wi-Fi..." : "Conectando..."}
+                </div>
               ) : (
                 <>Buscar Dispositivos</>
               )}
@@ -406,9 +421,10 @@ const AddTotemModal = ({
                   <input
                     type={showPassword ? "text" : "password"}
                     value={wifiPassword}
+                    disabled={!selectedWifi || !selectedWifi?.secure}
                     onChange={(e) => setWifiPassword(e.target.value)}
                     className="bg-input-bg px-4 py-2 pr-10 border border-input-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary w-full text-input-text"
-                    placeholder="Digite a senha..."
+                    placeholder="Digite a senha"
                   />
                   <button
                     type="button"
@@ -428,7 +444,11 @@ const AddTotemModal = ({
                 disabled={!selectedWifi || isSendingWifi}
                 className="flex justify-center items-center gap-2 bg-card hover:bg-primary-dark disabled:opacity-50 px-4 py-2 border border-primary-dark rounded-lg font-semibold text-text-button hover:text-text transition-colors cursor-pointer"
               >
-                {isSendingWifi ? <Loader2 className="animate-spin" size={18} /> : "Conectar"}
+                {isSendingWifi ?
+                  <div className="flex justify-center items-center min-h-screen">
+                    <div className="border-primary-dark border-b-2 rounded-full w-4 h-4 animate-spin"></div>
+                  </div>
+                  : "Conectar"}
               </button>
             </div>
           </div>
@@ -437,8 +457,8 @@ const AddTotemModal = ({
         {/* STEP 3: CONNECTING (LOADING) */}
         {step === "connecting_wifi" && (
           <div className="flex flex-col items-center py-8 text-center animate-in fade-in">
-            <div className="bg-blue-100 mb-4 p-4 rounded-full">
-              <Loader2 size={48} className="text-blue-600 animate-spin" />
+            <div className="mb-4 p-4 rounded-full">
+              <div className="border-primary-dark border-b-2 rounded-full w-16 h-16 animate-spin"></div>
             </div>
             <h2 className="font-bold text-foreground text-xl">Conectando Totem ao Wi-Fi...</h2>
             <span className="mb-2 font-mono text-[10px] text-gray-400">ID: {generatedTotemId}</span>
@@ -479,7 +499,7 @@ const AddTotemModal = ({
               />
             </div>
 
-            <div className="gap-4 grid grid-cols-2 lg:grid-cols-1 w-full">
+            <div className="flex flex-row gap-4 w-full">
               <div className="flex flex-col gap-1 mb-4 w-full">
                 <label className="text-muted text-sm">Latitude</label>
                 <input
@@ -488,7 +508,7 @@ const AddTotemModal = ({
                   value={latitude}
                   onChange={(e) => setLatitude(e.target.value)}
                   className="bg-background mt-1 px-3 py-2 border border-border rounded-lg w-full disabled:text-gray-500"
-                  placeholder='...'
+                  placeholder=''
                 />
               </div>
               <div className="flex flex-col gap-1 mb-4 w-full">
@@ -499,7 +519,7 @@ const AddTotemModal = ({
                   value={longitude}
                   onChange={(e) => setLongitude(e.target.value)}
                   className="bg-background mt-1 px-3 py-2 border border-border rounded-lg w-full disabled:text-gray-500"
-                  placeholder='...'
+                  placeholder=''
                 />
               </div>
             </div>
@@ -535,16 +555,106 @@ const AddTotemModal = ({
   );
 };
 
+const ViewImageModal = ({ isOpen, onClose, data }) => {
+  const [index, setIndex] = useState(0);
+
+  // Reseta o index quando o modal abre
+  useEffect(() => {
+    if (isOpen) setIndex(0);
+  }, [isOpen]);
+
+  if (!isOpen || !data || data.length === 0) return null;
+
+  const currentItem = data[index];
+
+  // Construção da URL (Ajuste conforme sua lógica de backend)
+  // Remove barra inicial se houver para evitar //
+  const cleanPath = currentItem.image.startsWith('/') ? currentItem.image.slice(1) : currentItem.image;
+  const imgUrl = `http://${process.env.NEXT_PUBLIC_API_URL}:${process.env.NEXT_PUBLIC_API_PORT}/${cleanPath}`;
+
+  // Formatação da data (Ex: 10/12/2025 às 14:30)
+  const formattedDate = new Date(currentItem.timestamp).toLocaleString('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+
+  // Funções de navegação (com stopPropagation para não fechar o modal ao clicar na seta)
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setIndex((prev) => (prev === 0 ? data.length - 1 : prev - 1));
+  };
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setIndex((prev) => (prev === data.length - 1 ? 0 : prev + 1));
+  };
+
+  return (
+    <div
+      className="z-[999] fixed inset-0 flex justify-center items-center bg-black/60 backdrop-blur-sm p-4 w-full h-full transition-all"
+      onClick={onClose} // Fecha ao clicar no fundo escuro
+    >
+      <div
+        // 🛑 stopPropagation impede que cliques aqui dentro fechem o modal
+        onClick={(e) => e.stopPropagation()}
+        className="flex flex-col bg-card shadow-2xl p-6 border border-border rounded-xl w-[90%] max-w-4xl h-auto max-h-[90vh] animate-in duration-300 fade-in zoom-in"
+      >
+
+        {/* Header: Botão Fechar */}
+        <div className="flex justify-end mb-2">
+          <button onClick={onClose} className="hover:bg-muted p-1 rounded-full text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Área Principal: Navegação + Imagem */}
+        <div className="flex flex-row flex-1 justify-between items-center gap-4 w-full overflow-hidden">
+
+          {/* Seta Esquerda */}
+          <button
+            onClick={handlePrev}
+            className="hover:bg-muted p-2 rounded-full font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <ChevronLeft size={32} />
+          </button>
+
+          {/* Container da Imagem Centralizado */}
+          <div className='relative flex flex-1 justify-center items-center w-full h-full overflow-hidden'>
+            {/* Adicionei max-h-[60vh] para garantir que cabe na tela */}
+            <img
+              src={imgUrl}
+              alt={`Registro de ${formattedDate}`}
+              className="shadow-sm rounded-md w-auto max-w-full h-auto max-h-[60vh] object-contain"
+            />
+          </div>
+
+          {/* Seta Direita */}
+          <button
+            onClick={handleNext}
+            className="hover:bg-muted p-2 rounded-full font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <ChevronRight size={32} />
+          </button>
+        </div>
+
+        {/* Footer: Data */}
+        <p className="mt-4 w-full text-muted text-sm text-center">Coletado em {formattedDate}</p>
+
+      </div>
+    </div>
+  );
+};
 // --- Main Component ---
 export default function Dashboard() {
   const router = useRouter();
-  const MapContainer = dynamic(() => import("./RealMap"), { ssr: false });
+  const MapContainer = dynamic(() => import("@/app/components/RealMap"), { ssr: false });
 
   // UI State
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddTotemModalOpen, setIsAddTotemModalOpen] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [isOpenImgModal, setIsOpenImgModal] = useState(false);
   const [viewMode, setViewMode] = useState<"charts" | "map" | "reports">("charts");
 
   // Data State
@@ -581,6 +691,7 @@ export default function Dashboard() {
     return selectedMeasurements.map((c) => ({
       value: c.temperatura,
       timestamp: new Date(c.criado_em).toLocaleString(),
+      image: c.imagem
     }));
   }, [selectedMeasurements]);
 
@@ -588,6 +699,7 @@ export default function Dashboard() {
     return selectedMeasurements.map((c) => ({
       value: c.umidade,
       timestamp: new Date(c.criado_em).toLocaleString(),
+      image: c.imagem
     }));
   }, [selectedMeasurements]);
 
@@ -609,7 +721,7 @@ export default function Dashboard() {
       }
     } catch (err: any) {
       console.log(err)
-      toast.error("Erro ao carregar dados.");
+      toast.error("Inconsistência ao carregar dados.");
     } finally {
       setIsLoading(false);
     }
@@ -662,7 +774,7 @@ export default function Dashboard() {
       toast.success("Totem cadastrado com sucesso!");
       setIsAddTotemModalOpen(false);
     } catch (error: any) {
-      toast.error("Erro ao cadastrar: " + error);
+      toast.error("Inconsistência ao cadastrar: " + error);
     }
   };
 
@@ -679,7 +791,7 @@ export default function Dashboard() {
         setIsLoadingLocation(false);
       },
       () => {
-        toast.error("Erro ao obter localização.");
+        toast.error("Inconsistência ao obter localização.");
         setIsLoadingLocation(false);
       }
     );
@@ -699,12 +811,25 @@ export default function Dashboard() {
     );
   }
 
+  const CustomTooltip = ({ active, payload, leftText, rightTect }) => {
+    if (!active || !payload || !payload.length) return null;
+    const value = payload[0].payload.value;
+    const date = payload[0].payload.timestamp;
+
+    return (
+      <div
+        className="hidden lg:block items-center gap-2 bg-card hover:bg-primary-dark px-4 py-2 border border-primary-dark rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer">
+        {leftText}{value}{rightTect} <p>{String(date)}</p>
+      </div>
+    );
+  };
+
   return (
     <>
       <AddTotemModal
         isOpen={isAddTotemModalOpen}
         onClose={() => setIsAddTotemModalOpen(false)}
-        onSave={handleCreateTotem} // Passa a função atualizada
+        onSave={handleCreateTotem}
         name={newTotemName}
         setName={setNewTotemName}
         latitude={latitude}
@@ -715,6 +840,12 @@ export default function Dashboard() {
         setIntervalo={setIntervalo}
         isLoadingLocation={isLoadingLocation}
         onGetLocation={handleGetLocation}
+      />
+
+      <ViewImageModal
+        isOpen={isOpenImgModal}
+        onClose={() => setIsOpenImgModal(false)}
+        data={temperatureChartData}
       />
 
       <div className="relative flex justify-center items-center bg-background w-full min-h-screen overflow-auto font-sans">
@@ -750,20 +881,23 @@ export default function Dashboard() {
             </div>
 
             <div className="flex flex-col items-center gap-4 h-full">
-              <button onClick={() => setViewMode('charts')} className="flex flex-row items-center gap-2 hover:bg-primary px-4 py-2 rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer">
+              <button onClick={() => setViewMode('charts')}
+                className="flex flex-row items-center gap-2 hover:bg-primary px-4 py-2 rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer">
                 <BarChart2 size={16} className='text-button' /> Dashboard
               </button>
-              <button disa onClick={() => {
+              <button onClick={() => {
                 if (totems.length === 0) {
                   toast.error("Nenhum totem cadastrado.");
                   return;
                 }
                 setViewMode('map')
               }
-              } className="flex flex-row items-center gap-2 hover:bg-primary px-4 py-2 rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer">
+              }
+                className="flex flex-row items-center gap-2 hover:bg-primary px-4 py-2 rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer">
                 <MapIcon size={16} className='text-button' /> Mapa
               </button>
-              <button onClick={() => setViewMode('reports')} className="flex flex-row items-center gap-2 hover:bg-primary px-4 py-2 rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer">
+              <button onClick={() => setViewMode('reports')}
+                className="flex flex-row items-center gap-2 hover:bg-primary px-4 py-2 rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer">
                 <Paperclip size={16} className='text-button' /> Relatórios
               </button>
             </div>
@@ -867,14 +1001,33 @@ export default function Dashboard() {
                     <div className="flex flex-col w-full h-[250px] lg:h-full min-h-0">
                       <span className="mb-2 text-muted text-sm">Temperatura (ºC)</span>
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={temperatureChartData} margin={{ top: 10, right: 0, left: -30, bottom: 0 }}>
+                        <LineChart
+                          data={temperatureChartData}
+                          margin={{ top: 10, right: 0, left: -30, bottom: 0 }}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="timestamp" tick={{ fontSize: 12 }} />
                           <YAxis />
-                          <Tooltip labelFormatter={(label) => `Hora: ${label}`} />
-                          <Line type="monotone" dataKey="value" stroke="#FACC15" strokeWidth={2} />
+
+                          <Tooltip content={<CustomTooltip leftText={"Temperatura: "} rightTect={'ºC'} />} />
+
+                          <Line
+                            type="monotone"
+                            dataKey="value"
+                            stroke="#FACC15"
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
+                            activeDot={{
+                              r: 6,
+                              style: { cursor: "pointer" },
+                              onClick: (e, payload) => {
+                                setIsOpenImgModal(true);
+                              }
+                            }}
+                          />
                         </LineChart>
                       </ResponsiveContainer>
+
                     </div>
                     <div className="flex flex-col w-full h-[250px] lg:h-full min-h-0">
                       <span className="mb-2 text-muted text-sm">Umidade (%)</span>
@@ -883,8 +1036,17 @@ export default function Dashboard() {
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="timestamp" tick={{ fontSize: 12 }} />
                           <YAxis />
-                          <Tooltip labelFormatter={(label) => `Hora: ${label}`} />
-                          <Line type="monotone" dataKey="value" stroke="#13cde6" strokeWidth={2} />
+                          <Tooltip content={<CustomTooltip leftText={"Umidade: "} rightTect={'%'} />} />
+                          <Line type="monotone" dataKey="value" stroke="#13cde6" strokeWidth={2}
+                            dot={{ r: 4 }}
+                            activeDot={{
+                              r: 6,
+                              style: { cursor: "pointer" },
+                              onClick: (e, payload) => {
+                                setIsOpenImgModal(true);
+                              }
+                            }}
+                          />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>

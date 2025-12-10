@@ -28,7 +28,7 @@ export const classificarImagem = (buffer: Buffer): Promise<string> => {
     });
 
     python.stderr.on("data", (data) => {
-      console.error("Erro do Python:", data.toString());
+      console.error("Inconsistência do Python:", data.toString());
     });
 
     python.on("close", (code) => {
@@ -38,7 +38,7 @@ export const classificarImagem = (buffer: Buffer): Promise<string> => {
         const lastLine = lines[lines.length - 1].trim();
         resolve(lastLine);
       } else {
-        reject(new Error("Erro ao classificar imagem"));
+        reject(new Error("Inconsistência ao classificar imagem"));
       }
     });
   });
