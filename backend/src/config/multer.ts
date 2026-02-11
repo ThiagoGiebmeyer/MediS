@@ -26,19 +26,25 @@ const storage = multer.diskStorage({
 export const multerConfig = {
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: 15 * 1024 * 1024, // 15MB
+    files: 1,
+    fields: 10,
   },
   fileFilter: (req: any, file: any, cb: any) => {
-    const allowedMimes = [
+    const allowedMimes = new Set([
       "image/jpeg",
       "image/pjpeg",
       "image/png",
-    ];
-    if (allowedMimes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Tipo de arquivo inválido. Apenas imagens."));
+    ]);
+    const allowedExts = new Set([".jpg", ".jpeg", ".png"]);
+    const ext = path.extname(file.originalname || "").toLowerCase();
+
+    if (!allowedMimes.has(file.mimetype) || !allowedExts.has(ext)) {
+      cb(new Error("Tipo de arquivo inválido. Envie JPG ou PNG."));
+      return;
     }
+
+    cb(null, true);
   },
 };
 

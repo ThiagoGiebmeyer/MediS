@@ -1,8 +1,10 @@
-import app from "./app";
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 
+// Carregar .env PRIMEIRO antes de qualquer outra coisa
 dotenv.config();
+
+import app from "./app";
+import mongoose from "mongoose";
 
 const PORT = Number(process.env.PORT) || 3001; // Garante que é número
 const MONGO_URI = process.env.DB_URL || "";

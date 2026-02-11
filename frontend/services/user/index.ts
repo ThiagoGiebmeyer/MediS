@@ -17,3 +17,15 @@ export async function register(email: string, password: string, nome: string, so
   });
   return response.data;
 }
+
+export async function requestPasswordReset(email: string) {
+  const response = await api.post("user/forgot-password", {
+    email
+  });
+  return response.data;
+}
+
+export async function getProfile() {
+  const response = await api.get("user/me");
+  return response.data;
+}

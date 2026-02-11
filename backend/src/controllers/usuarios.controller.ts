@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { jwtConfig } from "../config/jwt";
 import { Usuario } from "../database/models/usuarios.model";
-import { getUserByEmail } from "../services/usuario.service";
+import { getUserByEmail, getUserById } from "../services/usuario.service";
 
 export const login = async (req: Request, res: Response) => {
   const { email, senha } = req.body;
@@ -111,6 +111,79 @@ export const register = async (req: Request, res: Response) => {
       error: true,
       messageError: "Inconsistência interno no servidor.",
       data: []
+    });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      error: true,
+      messageError: "Email e obrigatorio.",
+      data: []
+    });
+  }
+
+  try {
+    await getUserByEmail(email);
+
+    return res.status(200).json({
+      error: false,
+      messageError: "",
+      data: [{
+        message: "Se o e-mail existir, enviaremos instrucoes de recuperacao."
+      }]
+    });
+  } catch (error) {
+    console.error("Inconsistência na recuperacao de senha:", error);
+    return res.status(500).json({
+      error: true,
+      messageError: "Inconsistência interno no servidor.",
+      data: []
+    });
+  }
+};
+
+export const getProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        error: true,
+        messageError: "Usuário não autenticado.",
+        data: null
+      });
+    }
+
+    const user = await getUserById(userId);
+    if (!user) {
+      return res.status(404).json({
+        error: true,
+        messageError: "Usuário não encontrado.",
+        data: null
+      });
+    }
+
+    return res.status(200).json({
+      error: false,
+      messageError: "",
+      data: {
+        id: user._id,
+        nome: user.nome,
+        sobrenome: user.sobrenome,
+        email: user.email,
+        criado_em: (user as any).criado_em,
+        alterado_em: (user as any).alterado_em
+      }
+    });
+  } catch (error) {
+    console.error("Inconsistência ao buscar perfil:", error);
+    return res.status(500).json({
+      error: true,
+      messageError: "Inconsistência interno no servidor.",
+      data: null
     });
   }
 };

@@ -1,25 +1,46 @@
 @import "tailwindcss";
 
 :root {
-  --background: #282C31;
-  --text: #282C31;
-  --text-button: #F4F4F4;
-  --border: #282C31;
-  --foreground: #F4F4F4;
-  --card: #202226;
-  --card-alt: #23262Bcc;
-  --primary: #00FF99;
-  --primary-dark: #00CC66;
-  --muted: #8A8F98;
-  --input-bg: #202226;
-  --input-border: #8A8F98;
-  --input-text: #F4F4F4;
+  color-scheme: light;
+  --background: #f5f7fb;
+  --text: #0f172a;
+  --text-button: #0f172a;
+  --on-primary: #f8fafc;
+  --border: #e2e8f0;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-alt: #eef2f6;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --muted: #64748b;
+  --input-bg: #ffffff;
+  --input-border: #cbd5f5;
+  --input-text: #0f172a;
+  --bg-gradient: radial-gradient(1200px circle at 10% 10%, #dbeafe 0%, #f8fafc 45%, #eef2f6 100%);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0b0f14;
+  --text: #e2e8f0;
+  --text-button: #e2e8f0;
+  --on-primary: #0b0f14;
+  --border: #1f2937;
+  --foreground: #e2e8f0;
+  --card: #111827;
+  --card-alt: #0f172a;
+  --muted: #94a3b8;
+  --input-bg: #0f172a;
+  --input-border: #334155;
+  --input-text: #e2e8f0;
+  --bg-gradient: radial-gradient(1000px circle at 10% 10%, #1f2937 0%, #0b0f14 50%, #070a0f 100%);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-text: var(--text);
   --color-text-button: var(--text-button);
+  --color-on-primary: var(--on-primary);
   --color-border: var(--border);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -57,7 +78,70 @@ input[type="number"] {
 
 
 body {
-  background: var(--background);
+  background: var(--bg-gradient);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  transition: background 200ms ease, color 200ms ease;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes float-slow {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fade-up 0.7s ease both;
+}
+
+.fade-in {
+  animation: fade-in 0.6s ease both;
+}
+
+.float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.glow-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-panel::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg, rgba(37, 99, 235, 0.45), rgba(16, 185, 129, 0.25), rgba(14, 165, 233, 0.35));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }

@@ -14,9 +14,11 @@ import {
   Paperclip,
   Plus,
   RefreshCcw,
+  Sparkles,
   Wifi,
   X
 } from 'lucide-react';
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -34,6 +36,7 @@ import { getDashboardData, postNewTotem } from "@/services/index";
 import { Totem } from "@/types";
 import { isTokenExpired } from "@/utils";
 import dynamic from 'next/dynamic';
+import AnaliseImagemModal from "@/app/components/AnaliseImagemModal";
 
 // --- HELPER: Gerar ObjectId do MongoDB no Frontend ---
 const generateMongoObjectId = () => {
@@ -364,7 +367,7 @@ const AddTotemModal = ({
               disabled:opacity-50
               px-4 py-2 border border-primary-dark rounded-lg 
               w-full font-semibold text-text-button hover:text-text 
-              transition-colors
+              transition-colors cursor-pointer disabled:cursor-not-allowed
             `}
             >
 
@@ -429,7 +432,7 @@ const AddTotemModal = ({
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="top-1/2 right-3 absolute text-muted hover:text-foreground -translate-y-1/2"
+                    className="top-1/2 right-3 absolute text-muted hover:text-foreground transition-colors\ -translate-y-1/2 cursor-pointer"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -438,11 +441,11 @@ const AddTotemModal = ({
             )}
 
             <div className="flex justify-end gap-3 mt-2">
-              <button onClick={onClose} className="px-4 py-2 font-semibold text-muted hover:text-foreground">Cancelar</button>
+              <button onClick={onClose} className="px-4 py-2 font-semibold text-muted hover:text-foreground transition-colors cursor-pointer">Cancelar</button>
               <button
                 onClick={handleSendWifiConfig}
                 disabled={!selectedWifi || isSendingWifi}
-                className="flex justify-center items-center gap-2 bg-card hover:bg-primary-dark disabled:opacity-50 px-4 py-2 border border-primary-dark rounded-lg font-semibold text-text-button hover:text-text transition-colors cursor-pointer"
+                className="flex justify-center items-center gap-2 bg-card hover:bg-primary-dark disabled:opacity-50 px-4 py-2 border border-primary-dark rounded-lg font-semibold text-text-button hover:text-text transition-colors cursor-pointer disabled:cursor-not-allowed"
               >
                 {isSendingWifi ?
                   <div className="flex justify-center items-center min-h-screen">
@@ -650,12 +653,18 @@ export default function Dashboard() {
   const MapContainer = dynamic(() => import("@/app/components/RealMap"), { ssr: false });
 
   // UI State
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddTotemModalOpen, setIsAddTotemModalOpen] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [isOpenImgModal, setIsOpenImgModal] = useState(false);
+  const [isAnaliseImagemOpen, setIsAnaliseImagemOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"charts" | "map" | "reports">("charts");
+
+  const [filterStart, setFilterStart] = useState("");
+  const [filterEnd, setFilterEnd] = useState("");
+  const [appliedStart, setAppliedStart] = useState("");
+  const [appliedEnd, setAppliedEnd] = useState("");
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   // Data State
   const [dashboardData, setDashboardData] = useState<DashboardDataItem[]>([]);
@@ -703,10 +712,50 @@ export default function Dashboard() {
     }));
   }, [selectedMeasurements]);
 
-  const fetchDashboardData = useCallback(async () => {
+  const rangeLabel = useMemo(() => {
+    const today = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 7);
+    const defaultStart = start.toISOString().slice(0, 10);
+    const defaultEnd = today.toISOString().slice(0, 10);
+
+    if (appliedStart && appliedEnd) {
+      if (appliedStart === defaultStart && appliedEnd === defaultEnd) {
+        return "7 dias";
+      }
+      return `${appliedStart} - ${appliedEnd}`;
+    }
+
+    if (appliedStart || appliedEnd) {
+      return `${appliedStart || "..."} - ${appliedEnd || "..."}`;
+    }
+
+    return "7 dias";
+  }, [appliedStart, appliedEnd]);
+
+  const buildFilterParams = (start?: string, end?: string) => {
+    const params: { start?: string; end?: string } = {};
+    if (start) params.start = start;
+    if (end) params.end = end;
+    return params;
+  };
+
+  const fetchDashboardData = useCallback(async (override?: { start?: string; end?: string }) => {
     try {
       setIsLoading(true);
-      const data = await getDashboardData();
+      const params = override ?? buildFilterParams(appliedStart, appliedEnd);
+      const response = await getDashboardData(Object.keys(params).length ? params : undefined);
+
+      if (response.error) {
+        toast.error(response.messageError || "Inconsistência ao carregar dados.");
+        setDashboardData([]);
+        setTotems([]);
+        setSelectedTotemId("");
+        return;
+      }
+
+      const data = response.data || [];
+
       if (!data?.length) {
         setDashboardData([]);
         setTotems([]);
@@ -725,15 +774,24 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [router, appliedStart, appliedEnd]);
 
   useEffect(() => {
     if (isTokenExpired()) {
       localStorage.removeItem("token");
-      router.push("/");
+      router.push("/login");
       return;
     }
-    fetchDashboardData();
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 7);
+    const startValue = start.toISOString().slice(0, 10);
+    const endValue = end.toISOString().slice(0, 10);
+    setFilterStart(startValue);
+    setFilterEnd(endValue);
+    setAppliedStart(startValue);
+    setAppliedEnd(endValue);
+    fetchDashboardData({ start: startValue, end: endValue });
   }, []);
 
   useEffect(() => {
@@ -797,6 +855,37 @@ export default function Dashboard() {
     );
   };
 
+  const applyFilter = () => {
+    const params = buildFilterParams(filterStart, filterEnd);
+    setAppliedStart(filterStart);
+    setAppliedEnd(filterEnd);
+    fetchDashboardData(Object.keys(params).length ? params : undefined);
+    setIsFilterModalOpen(false);
+  };
+
+  const clearFilter = () => {
+    setFilterStart("");
+    setFilterEnd("");
+    setAppliedStart("");
+    setAppliedEnd("");
+    fetchDashboardData(undefined);
+    setIsFilterModalOpen(false);
+  };
+
+  const applyQuickRange = (days: number) => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - days);
+    const startValue = start.toISOString().slice(0, 10);
+    const endValue = end.toISOString().slice(0, 10);
+    setFilterStart(startValue);
+    setFilterEnd(endValue);
+    setAppliedStart(startValue);
+    setAppliedEnd(endValue);
+    fetchDashboardData({ start: startValue, end: endValue });
+    setIsFilterModalOpen(false);
+  };
+
   const handleLogout = () => {
     setIsLoading(true);
     localStorage.removeItem("token");
@@ -848,169 +937,235 @@ export default function Dashboard() {
         data={temperatureChartData}
       />
 
-      <div className="relative flex justify-center items-center bg-background w-full min-h-screen overflow-auto font-sans">
-        {viewMode === 'charts' && (
-          <button
-            onClick={() => setIsAddTotemModalOpen(true)}
-            className="lg:hidden right-4 bottom-4 z-50 fixed flex justify-center items-center bg-primary-dark hover:bg-primary shadow rounded-xl w-12 h-12 text-text text-2xl sm:text-5xl transition-colors cursor-pointer"
-          >
-            <Plus className='text-text-button' />
-          </button>
-        )}
+      <AnaliseImagemModal
+        isOpen={isAnaliseImagemOpen}
+        onClose={() => setIsAnaliseImagemOpen(false)}
+      />
 
-        {isMenuOpen && (
-          <div className="lg:hidden z-50 fixed inset-0 bg-black/40" onClick={() => setIsMenuOpen(false)}></div>
-        )}
-
-        <div className="flex flex-row justify-center items-center gap-6 w-full h-full">
-          {/* Sidebar Menu */}
-          <div className={`
-              bg-card shadow-sm lg:shadow-primary pt-8 px-4 rounded-xl 
-              h-screen lg:h-[90vh] flex flex-col justify-between z-50
-              transition-transform duration-300 ease-in-out
-              fixed lg:static top-0 left-0 
-              w-[70vw] sm:w-[50vw] md:w-[30vw] lg:w-[9vw]
-              ${isMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-            `}>
-            <div>
-              <header className="flex flex-col items-center gap-4 mb-6 pb-6 border-border border-b">
-                <div className="lg:pb-1 w-full">
-                  <h1 className="font-bold text-primary-dark text-3xl text-center">MediS</h1>
-                </div>
-              </header>
-            </div>
-
-            <div className="flex flex-col items-center gap-4 h-full">
-              <button onClick={() => setViewMode('charts')}
-                className="flex flex-row items-center gap-2 hover:bg-primary px-4 py-2 rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer">
-                <BarChart2 size={16} className='text-button' /> Dashboard
-              </button>
-              <button onClick={() => {
-                if (totems.length === 0) {
-                  toast.error("Nenhum totem cadastrado.");
-                  return;
-                }
-                setViewMode('map')
-              }
-              }
-                className="flex flex-row items-center gap-2 hover:bg-primary px-4 py-2 rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer">
-                <MapIcon size={16} className='text-button' /> Mapa
-              </button>
-              <button onClick={() => setViewMode('reports')}
-                className="flex flex-row items-center gap-2 hover:bg-primary px-4 py-2 rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer">
-                <Paperclip size={16} className='text-button' /> Relatórios
+      {isFilterModalOpen && (
+        <div className="z-[999] fixed inset-0 flex justify-center items-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-card/90 shadow-2xl p-6 border border-border rounded-3xl w-full max-w-lg glow-panel">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <p className="font-semibold text-muted text-xs uppercase tracking-[0.3em]">Filtro</p>
+                <h2 className="mt-2 font-semibold text-foreground text-xl">Selecionar período</h2>
+              </div>
+              <button
+                onClick={() => setIsFilterModalOpen(false)}
+                className="px-3 py-1 border border-border hover:border-primary rounded-full font-semibold text-foreground hover:text-primary text-xs transition-colors cursor-pointer"
+              >
+                Fechar
               </button>
             </div>
 
-            <button className="hover:bg-red-600 mb-2 px-4 py-2 rounded-lg w-full font-semibold text-text-button transition-colors cursor-pointer" onClick={handleLogout}>
-              Sair
-            </button>
+            <div className="gap-4 grid sm:grid-cols-2">
+              <div className="flex flex-col gap-1">
+                <label className="font-semibold text-muted text-xs uppercase tracking-[0.2em]">Inicio</label>
+                <input
+                  type="date"
+                  value={filterStart}
+                  onChange={(e) => setFilterStart(e.target.value)}
+                  className="bg-background px-3 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="font-semibold text-muted text-xs uppercase tracking-[0.2em]">Fim</label>
+                <input
+                  type="date"
+                  value={filterEnd}
+                  onChange={(e) => setFilterEnd(e.target.value)}
+                  className="bg-background px-3 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-foreground text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mt-4">
+              {[7, 30, 90].map((days) => (
+                <button
+                  key={days}
+                  onClick={() => applyQuickRange(days)}
+                  className="px-3 py-2 border border-border hover:border-primary rounded-full font-semibold text-foreground hover:text-primary text-xs transition-colors cursor-pointer"
+                >
+                  {days} dias
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2 mt-5">
+              <button
+                onClick={applyFilter}
+                className="bg-primary hover:bg-primary-dark px-4 py-2 rounded-full font-semibold text-on-primary text-xs transition-colors cursor-pointer"
+              >
+                Aplicar
+              </button>
+              <button
+                onClick={clearFilter}
+                className="px-4 py-2 border border-border hover:border-primary rounded-full font-semibold text-foreground hover:text-primary text-xs transition-colors cursor-pointer"
+              >
+                Limpar
+              </button>
+            </div>
           </div>
-
-          {/* Main Content */}
-          <main className="flex flex-col bg-card shadow-sm lg:shadow-primary p-4 sm:p-8 rounded-xl w-screen lg:w-[85%] h-screen lg:h-[90vh] overflow-auto">
-            <header className="flex justify-between items-center mb-6 pb-6 border-border border-b">
-              <div className="flex justify-between items-center gap-3 w-full">
-                <div className="flex flex-row items-center gap-2">
-                  <button onClick={() => setIsMenuOpen(true)} className="lg:hidden bg-card shadow rounded-lg text-3xl cursor-pointer">☰</button>
-                  {viewMode === 'charts' ? (
-                    <>
-                      <h1 className="font-bold text-primary-dark text-3xl">Totens</h1>
-                      <h1 className="text-muted text-sm">|</h1>
-                      <p className="text-muted text-sm">Últimos 7 dias</p>
-                    </>
-                  ) : viewMode === 'map' ? (
-                    <h1 className="font-bold text-primary-dark text-3xl">Totens</h1>
-                  ) : (
-                    <h1 className="font-bold text-primary-dark text-3xl">Relatórios</h1>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {viewMode === 'charts' ? (
-                    <button onClick={() => setIsAddTotemModalOpen(true)} className="hidden lg:block items-center gap-2 bg-card hover:bg-primary-dark px-4 py-2 border border-primary-dark rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer">
-                      + Totem
-                    </button>
-                  ) : (viewMode === 'map' || viewMode === 'reports') ? (
-                    <button onClick={() => setViewMode('charts')} className="block items-center gap-2 bg-card hover:bg-primary-dark px-4 py-2 border border-primary-dark rounded-lg w-full font-semibold text-text-button hover:text-text transition-colors cursor-pointer">
-                      Voltar
-                    </button>
-                  ) : <></>}
-
-                  {viewMode === 'charts' && (
-                    <button onClick={fetchDashboardData} className="items-center gap-2 bg-card hover:bg-primary-dark px-4 py-2 border border-primary-dark rounded-lg font-semibold text-text-button hover:text-text transition-colors cursor-pointer" title="Atualizar dados">
-                      <RefreshCcw className='items-center font-semibold text-text-button hover:text-text transition-colors cursor-pointer' />
-                    </button>
-                  )}
+        </div>
+      )}
+      <div className="bg-background min-h-screen text-foreground">
+        <div className="flex flex-col mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl min-h-screen">
+          <header className="flex flex-col gap-4 bg-card/80 shadow-lg mb-6 p-4 sm:p-6 border border-border rounded-3xl glow-panel">
+            <div className="flex flex-wrap justify-between items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex justify-center items-center bg-primary rounded-2xl w-10 h-10 font-bold text-on-primary">M</div>
+                <div>
+                  <p className="text-muted text-xs uppercase tracking-[0.3em]">Centro de controle</p>
+                  <h1 className="font-semibold text-foreground text-2xl">MediS Dashboard</h1>
                 </div>
               </div>
-            </header>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href="/profile"
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-border hover:border-primary rounded-full font-semibold text-foreground hover:text-primary text-sm transition-colors cursor-pointer"
+                >
+                  Perfil
+                </Link>
+                {viewMode === "charts" && (
+                  <button
+                    onClick={() => setIsAddTotemModalOpen(true)}
+                    className="inline-flex items-center gap-2 bg-primary/10 hover:bg-primary px-4 py-2 border border-primary rounded-full font-semibold text-primary hover:text-on-primary text-sm transition-colors cursor-pointer"
+                  >
+                    <Plus size={16} /> Novo totem
+                  </button>
+                )}
+                {viewMode === "charts" && (
+                  <button
+                    onClick={fetchDashboardData}
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-border hover:border-primary rounded-full font-semibold text-foreground hover:text-primary text-sm transition-colors cursor-pointer"
+                    title="Atualizar dados"
+                  >
+                    <RefreshCcw size={16} /> Atualizar
+                  </button>
+                )}
+                {viewMode === "charts" && (
+                  <button
+                    onClick={() => setIsAnaliseImagemOpen(true)}
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 hover:from-purple-700 to-pink-600 hover:to-pink-700 px-4 py-2 rounded-full font-semibold text-on-primary text-sm transition-colors cursor-pointer"
+                    title="Análise com IA"
+                  >
+                    <Sparkles size={16} /> Analisar IA
+                  </button>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-border hover:border-red-400 rounded-full font-semibold text-foreground hover:text-red-500 text-sm transition-colors cursor-pointer"
+                >
+                  Sair
+                </button>
+              </div>
+            </div>
 
-            {viewMode === 'charts' ? (
-              <>
-                <section className="gap-4 grid grid-cols-1 sm:grid-cols-3">
-                  <div className="flex flex-col items-start bg-background shadow p-6 rounded-lg w-full">
-                    <span className="mb-2 text-muted text-sm">Totem</span>
-                    <div className="relative w-full">
-                      {
-                        totems.length === 0 ? (
-                          <span className="font-bold text-foreground text-2xl">-</span>
-                        ) : (
-                          <>
-                            <select value={selectedTotemId} onChange={(e) => setSelectedTotemId(e.target.value)} className="bg-background focus:border-background rounded-lg focus:outline-none focus:ring-2 focus:ring-background w-full font-bold text-foreground text-2xl appearance-none cursor-pointer">
-                              {totems.map((t) => <option key={t._id} value={t._id}>{t.nome?.toUpperCase() || ''}</option>)}
-                            </select>
-                            <div className="right-0 absolute inset-y-0 flex items-center pr-3 pointer-events-none">
-                              <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </div>
-                          </>
-                        )
+            <div className="flex flex-wrap gap-2">
+              {[
+                { key: "charts", label: "Dashboard", icon: BarChart2 },
+                { key: "map", label: "Mapa", icon: MapIcon },
+                { key: "reports", label: "Relatórios", icon: Paperclip }
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive = viewMode === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => {
+                      if (item.key === "map" && totems.length === 0) {
+                        toast.error("Nenhum totem cadastrado.");
+                        return;
                       }
+                      setViewMode(item.key as typeof viewMode);
+                    }}
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
+                      isActive
+                        ? "bg-primary text-on-primary"
+                        : "border border-border text-foreground hover:border-primary hover:text-primary"
+                    }`}
+                  >
+                    <Icon size={16} /> {item.label}
+                  </button>
+                );
+              })}
+            </div>
 
+          </header>
 
-                    </div>
+          {viewMode === "charts" && (
+            <div className="flex flex-col gap-6">
+              <section className="gap-4 grid md:grid-cols-3">
+                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted text-sm">Totem ativo</span>
+                    <button
+                      onClick={() => setIsFilterModalOpen(true)}
+                      className="bg-primary/10 hover:bg-primary/20 px-3 py-1 rounded-full font-semibold text-primary text-xs transition-colors cursor-pointer"
+                    >
+                      {rangeLabel}
+                    </button>
                   </div>
-                  <div className="flex flex-col items-start bg-background shadow p-6 rounded-lg">
-                    <span className="mb-2 text-muted text-sm">Temperatura média</span>
-                    <span className="font-bold text-foreground text-2xl">{averageTemperature}</span>
-                    <div className="bg-linear-to-r from-yellow-400 to-red-500 mt-3 rounded-full w-full h-1.5"></div>
-                  </div>
-                  <div className="flex flex-col items-start bg-background shadow p-6 rounded-lg">
-                    <span className="mb-2 text-muted text-sm">Umidade média</span>
-                    <span className="font-bold text-foreground text-2xl">{averageHumidity}</span>
-                    <div className="bg-linear-to-r from-cyan-300 to-cyan-700 mt-3 rounded-full w-full h-1.5"></div>
-                  </div>
-                </section>
-
-                <h2 className="flex flex-row items-center gap-2 mt-8 mb-4 font-semibold text-foreground text-xl text-center">
-                  <BarChart2 size={20} className="text-primary" /> Histórico de Coletas
-                </h2>
-
-                {humidityChartData.length === 0 && temperatureChartData.length === 0 ? (
-                  <div className="flex flex-col justify-center items-center gap-4 h-full">
-                    {
-                      totems.length === 0 ? (
-                        <span className="mb-2 text-muted text-sm text-center">Nenhum totem cadastrado. Adicione um novo totem para começar a coletar dados.</span>
-                      ) : (
-                        <span className="mb-2 text-muted text-sm text-center">Nenhum registro coletado pelo totem...</span>
-                      )
-                    }
-                  </div>
-                ) : (
-                  <section className="gap-8 grid grid-cols-1 lg:grid-cols-2 w-full min-h-0 grow">
-                    <div className="flex flex-col w-full h-[250px] lg:h-full min-h-0">
-                      <span className="mb-2 text-muted text-sm">Temperatura (ºC)</span>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={temperatureChartData}
-                          margin={{ top: 10, right: 0, left: -30, bottom: 0 }}
+                  <div className="relative mt-4">
+                    {totems.length === 0 ? (
+                      <span className="font-semibold text-foreground text-2xl">-</span>
+                    ) : (
+                      <>
+                        <select
+                          value={selectedTotemId}
+                          onChange={(e) => setSelectedTotemId(e.target.value)}
+                          className="bg-background px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary w-full font-semibold text-foreground text-lg appearance-none"
                         >
+                          {totems.map((t) => (
+                            <option key={t._id} value={t._id}>
+                              {t.nome?.toUpperCase() || ""}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="right-0 absolute inset-y-0 flex items-center pr-3 text-muted pointer-events-none">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
+                  <span className="text-muted text-sm">Temperatura média</span>
+                  <p className="mt-3 font-semibold text-foreground text-3xl">{averageTemperature}</p>
+                  <div className="bg-card-alt mt-4 rounded-full w-full h-2">
+                    <div className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 rounded-full w-3/4 h-2" />
+                  </div>
+                </div>
+
+                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
+                  <span className="text-muted text-sm">Umidade média</span>
+                  <p className="mt-3 font-semibold text-foreground text-3xl">{averageHumidity}</p>
+                  <div className="bg-card-alt mt-4 rounded-full w-full h-2">
+                    <div className="bg-gradient-to-r from-cyan-200 via-cyan-400 to-sky-500 rounded-full w-2/3 h-2" />
+                  </div>
+                </div>
+              </section>
+
+              <section className="gap-6 grid lg:grid-cols-2">
+                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
+                  <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
+                    <BarChart2 size={16} className="text-primary" /> Temperatura (ºC)
+                  </div>
+                  {temperatureChartData.length === 0 ? (
+                    <div className="flex justify-center items-center h-[280px] text-muted text-sm">
+                      Nenhum registro coletado pelo totem...
+                    </div>
+                  ) : (
+                    <div className="h-[280px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={temperatureChartData} margin={{ top: 10, right: 0, left: -30, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="timestamp" tick={{ fontSize: 12 }} />
                           <YAxis />
-
                           <Tooltip content={<CustomTooltip leftText={"Temperatura: "} rightTect={'ºC'} />} />
-
                           <Line
                             type="monotone"
                             dataKey="value"
@@ -1020,45 +1175,80 @@ export default function Dashboard() {
                             activeDot={{
                               r: 6,
                               style: { cursor: "pointer" },
-                              onClick: (e, payload) => {
-                                setIsOpenImgModal(true);
-                              }
+                              onClick: () => setIsOpenImgModal(true)
                             }}
                           />
                         </LineChart>
                       </ResponsiveContainer>
-
                     </div>
-                    <div className="flex flex-col w-full h-[250px] lg:h-full min-h-0">
-                      <span className="mb-2 text-muted text-sm">Umidade (%)</span>
+                  )}
+                </div>
+
+                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
+                  <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
+                    <BarChart2 size={16} className="text-primary" /> Umidade (%)
+                  </div>
+                  {humidityChartData.length === 0 ? (
+                    <div className="flex justify-center items-center h-[280px] text-muted text-sm">
+                      Nenhum registro coletado pelo totem...
+                    </div>
+                  ) : (
+                    <div className="h-[280px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={humidityChartData} margin={{ top: 10, right: 0, left: -30, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="timestamp" tick={{ fontSize: 12 }} />
                           <YAxis />
                           <Tooltip content={<CustomTooltip leftText={"Umidade: "} rightTect={'%'} />} />
-                          <Line type="monotone" dataKey="value" stroke="#13cde6" strokeWidth={2}
+                          <Line
+                            type="monotone"
+                            dataKey="value"
+                            stroke="#13cde6"
+                            strokeWidth={2}
                             dot={{ r: 4 }}
                             activeDot={{
                               r: 6,
                               style: { cursor: "pointer" },
-                              onClick: (e, payload) => {
-                                setIsOpenImgModal(true);
-                              }
+                              onClick: () => setIsOpenImgModal(true)
                             }}
                           />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
-                  </section>
-                )}
-              </>
-            ) : viewMode === 'map' ? (
-              <div className="w-full h-full"><MapContainer totems={totems} /></div>
-            ) : viewMode === 'reports' ? (
-              <div className="w-full h-full"></div>
-            ) : null}
-          </main>
+                  )}
+                </div>
+              </section>
+            </div>
+          )}
+
+          {viewMode === "map" && (
+            <div className="bg-card/80 shadow-lg p-4 border border-border rounded-3xl glow-panel">
+              <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
+                <MapIcon size={16} className="text-primary" /> Visão geográfica dos totens
+              </div>
+              <div className="border border-border rounded-2xl w-full h-[70vh] overflow-hidden">
+                <MapContainer totems={totems} />
+              </div>
+            </div>
+          )}
+
+          {viewMode === "reports" && (
+            <div className="gap-6 grid lg:grid-cols-3">
+              {[
+                { title: "Resumo semanal", text: "Consolide leituras por período e compare ambientes." },
+                { title: "Indicadores-chave", text: "Acompanhe tendencias de temperatura e umidade." },
+                { title: "Exportação", text: "Gere relatórios e compartilhe resultados." }
+              ].map((item) => (
+                <div key={item.title} className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel">
+                  <p className="font-semibold text-foreground text-lg">{item.title}</p>
+                  <p className="mt-3 text-muted text-sm">{item.text}</p>
+                  <div className="mt-6 p-4 border border-border border-dashed rounded-2xl text-muted text-xs">
+                    Em breve: configuracoes detalhadas e filtros avancados.
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </>

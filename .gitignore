@@ -53,10 +53,22 @@ backend/.env.test.local
 backend/.env.production.local
 backend/coverage/
 backend/*.tsbuildinfo
+backend/uploads/
+backend/temp/
+backend/src/temp/
 
-# IA
-ia/datasets/Soja
-ia/models
+# IA - Python
+ia/venv/
+ia/__pycache__/
+ia/utils/__pycache__/
+ia/*.pyc
+ia/**/*.pyc
+ia/datasets/
+ia/models/
+ia/temp/
+ia/.pytest_cache/
+ia/*.h5
+ia/*.pkl
 
 # Testes e coverage
 coverage/
