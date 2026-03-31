@@ -25,7 +25,7 @@ export default function Home() {
             Entrar
           </Link>
           <Link
-            href="/signup"
+            href="/sign-up"
             className="bg-primary hover:bg-primary-dark px-4 py-2 rounded-full font-semibold text-on-primary text-sm transition-colors"
           >
             Criar conta
@@ -53,7 +53,7 @@ export default function Home() {
                 Acessar plataforma
               </Link>
               <Link
-                href="/signup"
+                href="/sign-up"
                 className="px-6 py-3 border border-border hover:border-primary rounded-full font-semibold text-foreground hover:text-primary text-sm transition-colors"
               >
                 Criar minha conta
@@ -162,7 +162,7 @@ export default function Home() {
               Entrar
             </Link>
             <Link
-              href="/signup"
+              href="/sign-up"
               className="bg-primary hover:bg-primary-dark px-6 py-3 rounded-full font-semibold text-on-primary text-sm transition-colors"
             >
               Quero experimentar

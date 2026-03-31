@@ -13,7 +13,7 @@ export default function Login() {
   const [loading, setLoading] = useState(true);
 
   const goToRegister = () => {
-    router.push("/signup");
+    router.push("/sign-up");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

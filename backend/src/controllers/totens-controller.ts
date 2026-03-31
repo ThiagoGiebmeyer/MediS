@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Totem } from "../database/models/totens.model";
+import { Totem } from "../database/models/totens-model";
 
 export const createTotem = async (req: Request, res: Response) => {
   try {

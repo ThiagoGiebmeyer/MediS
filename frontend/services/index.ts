@@ -1,3 +1,3 @@
 export * from './totem/'
-export * from './totemReading/'
+export * from './totem-reading/'
 export * from './user/'

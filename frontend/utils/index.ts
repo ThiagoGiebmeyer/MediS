@@ -1,1 +1,1 @@
-export * from './tokenDecode';
+export * from './token-decode';

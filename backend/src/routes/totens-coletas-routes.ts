@@ -9,7 +9,7 @@ import {
   getAllReadings,
   getLastReading,
   getReadingStats
-} from "../controllers/totens_coletas.controller";
+} from "../controllers/totens-coletas-controller";
 
 const router = Router();
 
@@ -25,10 +25,10 @@ const uploadMiddleware = (req: Request, res: Response, next: NextFunction) => {
 
       if (err instanceof multer.MulterError) {
         // Erros do Multer (ex: arquivo muito grande)
-        return res.status(400).json({ error: true, message: `Erro de Upload: ${err.message}` });
+        return res.status(400).json({ error: true, message: `Erro no upload da imagem: ${err.message}` });
       } else if (err) {
         // Erros genéricos ou do fileFilter
-        return res.status(400).json({ error: true, message: err.message });
+        return res.status(400).json({ error: true, message: `Falha de validacao do arquivo: ${err.message}` });
       }
     }
     // Sucesso, segue para o controller

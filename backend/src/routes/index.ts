@@ -1,9 +1,9 @@
 import { Router } from "express";
 
-import userRoutes from "./usuario.routes";
-import totemRoutes from "./totens.routes";
-import totemReadingRoutes from "./totens_coletas.routes";
-import analiseRoutes from "./analise.routes";
+import userRoutes from "./usuario-routes";
+import totemRoutes from "./totens-routes";
+import totemReadingRoutes from "./totens-coletas-routes";
+import analiseRoutes from "./analise-routes";
 
 const router = Router();
 

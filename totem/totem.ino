@@ -6,11 +6,9 @@
 #include <WiFi.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
-#include <HTTPClient.h>
 #include "esp_camera.h"
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
-#include <mbedtls/base64.h>
 
 // --- CONFIGURAÇÕES DE SERVIDOR E API ---
 String serverHost = "";
@@ -67,7 +65,30 @@ BootState bootState = NO_CONFIG;
 unsigned long lastAutoTry = 0;
 bool cameraInitialized = false;
 
-const char PROGMEM b64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const uint32_t MIN_HEAP_CAPTURE = 45000;
+const uint32_t MIN_HEAP_UPLOAD = 38000;
+const uint32_t MIN_PSRAM_CAPTURE = 70000;
+const size_t UPLOAD_CHUNK_SIZE = 2048;
+
+void logMemorySnapshot(const char *stage) {
+  Serial.printf("[MEM] %s | freeHeap=%u | minHeap=%u | maxAlloc=%u", stage, ESP.getFreeHeap(), ESP.getMinFreeHeap(), ESP.getMaxAllocHeap());
+  if (psramFound()) {
+    Serial.printf(" | freePSRAM=%u", ESP.getFreePsram());
+  }
+  Serial.println();
+}
+
+bool hasMemoryForCapture() {
+  if (ESP.getFreeHeap() < MIN_HEAP_CAPTURE) return false;
+  if (psramFound() && ESP.getFreePsram() < MIN_PSRAM_CAPTURE) return false;
+  return true;
+}
+
+bool hasMemoryForUpload() {
+  if (ESP.getFreeHeap() < MIN_HEAP_UPLOAD) return false;
+  if (ESP.getMaxAllocHeap() < UPLOAD_CHUNK_SIZE + 1024) return false;
+  return true;
+}
 
 void checkSerialCommand() {
   if (Serial.available() > 0) {
@@ -130,6 +151,16 @@ class MyCallbacks : public BLECharacteristicCallbacks {
       ipRec.trim();
 
       if (ssidRec.length() > 0) {
+        if (idRec.length() == 0 || ipRec.length() == 0) {
+          Serial.println("Configuracao recusada: campos obrigatorios ausentes (totem_id/ip).");
+          return;
+        }
+
+        if (intervalRec <= 0 || intervalRec > 120) {
+          Serial.println("Intervalo invalido no payload. Usando valor padrao atual.");
+          intervalRec = coletaIntervalo;
+        }
+
         targetSSID = ssidRec;
         targetPass = passRec;
         totemID = idRec;
@@ -137,11 +168,11 @@ class MyCallbacks : public BLECharacteristicCallbacks {
         if (portRec > 0) serverPort = portRec;
         if (intervalRec > 0) coletaIntervalo = intervalRec;
 
-        Serial.println("JSON Parsed successfully. Requesting connection test...");
+        Serial.println("Configuracao recebida. Testando conexao WiFi...");
         requestConnectionTest = true;
       }
     } else {
-      Serial.println("BLE JSON Parsing Error");
+      Serial.println("Falha ao ler configuracao BLE (JSON invalido).");
     }
   }
 };
@@ -212,36 +243,54 @@ bool initCameraOnce() {
 }
 
 String sendPhoto() {
-  Serial.println("\n--- Starting Multipart Upload ---");
+  Serial.println("\n--- Iniciando envio de imagem ---");
+  logMemorySnapshot("pre-capture");
+
+  if (!hasMemoryForCapture()) {
+    Serial.println("Memoria insuficiente para captura. Coleta adiada.");
+    return "Low Memory Capture";
+  }
 
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Error: WiFi Disconnected");
+    Serial.println("Falha no envio: WiFi desconectado.");
     return "Wifi Disconnected";
   }
   if (!cameraInitialized) {
-    Serial.println("Error: Camera Not Init");
+    Serial.println("Falha no envio: camera nao inicializada.");
     return "Camera Not Init";
+  }
+  if (totemID.length() == 0 || serverHost.length() == 0) {
+    Serial.println("Falha no envio: configuracao incompleta (totem_id/host).");
+    return "Invalid Config";
   }
 
   // Tira a foto
   camera_fb_t *fb = esp_camera_fb_get();
   if (!fb) {
-    Serial.println("Error: Capture Failed");
+    Serial.println("Falha na captura da imagem.");
+    logMemorySnapshot("capture-failed");
     return "Capture Failed";
   }
-  Serial.printf("Picture taken! Size: %d bytes\n", fb->len);
+  Serial.printf("Foto capturada com sucesso (%d bytes).\n", fb->len);
+  logMemorySnapshot("post-capture");
+
+  if (!hasMemoryForUpload()) {
+    Serial.println("Memoria insuficiente para upload. Tentara novamente no proximo ciclo.");
+    esp_camera_fb_return(fb);
+    return "Low Memory Upload";
+  }
 
   WiFiClient client;
-  // AUMENTADO PARA 60s (Evita queda em redes lentas)
+  // Timeout maior para redes lentas sem reter buffers gigantes em RAM
   client.setTimeout(60000);
 
-  Serial.println("Connecting to server...");
+  Serial.println("Conectando ao servidor para upload...");
   if (!client.connect(serverHost.c_str(), serverPort)) {
-    Serial.println("Error: Connection Failed");
+    Serial.println("Falha de conexao com servidor.");
     esp_camera_fb_return(fb);
     return "Connection Failed";
   }
-  Serial.println("Connected! Sending headers...");
+  Serial.println("Conexao estabelecida. Enviando cabecalhos...");
 
   String boundary = "--------------------------Ef1eF1eF1";
 
@@ -268,75 +317,67 @@ String sendPhoto() {
   client.print(bodyHead);
   client.print(fileHead);
 
-  // --- OTIMIZAÇÃO DE ENVIO DA IMAGEM ---
-  Serial.println("Sending image data...");
+  // Envio em chunks fixos para evitar alocacao dinamica recorrente
+  Serial.println("Enviando dados da imagem...");
   uint8_t *fbBuf = fb->buf;
   size_t fbLen = fb->len;
-
-  // Buffer de 4KB (Muito mais rápido que 1KB)
-  const size_t bufferSize = 4096;
-  uint8_t *buffer = (uint8_t *)malloc(bufferSize);
-
-  if (buffer) {
-    // Modo Copia Segura
-    while (fbLen > 0) {
-      size_t toSend = (fbLen > bufferSize) ? bufferSize : fbLen;
-      memcpy(buffer, fbBuf, toSend);  // Copia para buffer local (opcional, mas estável)
-
-      size_t written = client.write(buffer, toSend);
-
-      if (written != toSend) {
-        Serial.println("Error: Upload interrupted/failed writing to client");
-        free(buffer);
-        esp_camera_fb_return(fb);
-        client.stop();
-        return "Write Error";
-      }
-
-      fbBuf += toSend;
-      fbLen -= toSend;
-      // Delay removido para máxima velocidade
+  while (fbLen > 0) {
+    size_t toSend = (fbLen > UPLOAD_CHUNK_SIZE) ? UPLOAD_CHUNK_SIZE : fbLen;
+    size_t written = client.write(fbBuf, toSend);
+    if (written != toSend) {
+      Serial.println("Falha durante upload: escrita parcial no socket.");
+      esp_camera_fb_return(fb);
+      client.stop();
+      return "Write Error";
     }
-    free(buffer);
-  } else {
-    // Fallback se faltar memória (envia direto do ponteiro da camera)
-    while (fbLen > 0) {
-      size_t toSend = (fbLen > 1024) ? 1024 : fbLen;
-      client.write(fbBuf, toSend);
-      fbBuf += toSend;
-      fbLen -= toSend;
-    }
+    fbBuf += toSend;
+    fbLen -= toSend;
   }
 
   client.print(bodyTail);
   esp_camera_fb_return(fb);
-  Serial.println("Data sent. Waiting for response...");
+  Serial.println("Upload concluido. Aguardando resposta HTTP...");
+  logMemorySnapshot("post-upload");
 
-  // Aguarda resposta
+  // Aguarda primeira linha da resposta para validar status sem acumular payload em RAM
   long timeout = millis() + 20000;
-  String response = "";
   bool responseStarted = false;
+  int statusCode = -1;
+  String statusLine = "";
 
   while (millis() < timeout) {
     if (client.available()) {
       responseStarted = true;
-      char c = client.read();
-      response += c;
+      statusLine = client.readStringUntil('\n');
+      statusLine.trim();
+      if (statusLine.startsWith("HTTP/1.1 ") || statusLine.startsWith("HTTP/1.0 ")) {
+        statusCode = statusLine.substring(9, 12).toInt();
+      }
+      break;
     } else if (responseStarted && !client.connected()) {
       break;
     }
     delay(10);
   }
 
+  long drainTimeout = millis() + 1000;
+  while (millis() < drainTimeout && client.connected()) {
+    while (client.available()) {
+      client.read();
+    }
+    delay(2);
+  }
+
   client.stop();
 
-  if (response.length() > 0) {
-    Serial.println("--- Server Response ---");
-    Serial.println(response);
-    Serial.println("-----------------------");
+  if (statusCode >= 200 && statusCode < 300) {
+    Serial.printf("Upload finalizado com sucesso (HTTP %d).\n", statusCode);
     return "Ok";
+  } else if (statusCode > 0) {
+    Serial.printf("Servidor respondeu com erro HTTP %d.\n", statusCode);
+    return "HTTP Error";
   } else {
-    Serial.println("Error: No response from server (Timeout)");
+    Serial.println("Sem resposta valida do servidor (timeout).\n");
     return "Timeout";
   }
 }
@@ -450,7 +491,7 @@ void loop() {
       shouldScanWifi = false;
       WiFi.disconnect();
       delay(100);
-      Serial.println("Starting WiFi Scan...");
+      Serial.println("Iniciando varredura de redes WiFi...");
       int n = WiFi.scanNetworks();
       String json = "[";
       int count = 0;
@@ -464,7 +505,7 @@ void loop() {
       }
       json += "]";
       if (pCharacteristic) pCharacteristic->setValue((uint8_t *)json.c_str(), json.length());
-      Serial.println("WiFi Scan completed.");
+      Serial.println("Varredura de WiFi concluida.");
     }
 
     if (requestConnectionTest) {
@@ -478,7 +519,7 @@ void loop() {
     unsigned long now = millis();
     if (now - lastAutoTry >= AUTO_RETRY_MS) {
       lastAutoTry = now;
-      Serial.println("Boot: attempting auto-connect...");
+      Serial.println("Tentando reconectar no WiFi...");
       WiFi.begin(targetSSID.c_str(), targetPass.c_str());
 
       unsigned long start = millis();
@@ -492,10 +533,10 @@ void loop() {
       }
 
       if (connected) {
-        Serial.println("Boot: WiFi Connected! IP: " + WiFi.localIP().toString());
+        Serial.println("WiFi conectado. IP: " + WiFi.localIP().toString());
         bootState = CONNECTED;
       } else {
-        Serial.println("Boot: Connect failed. Retry later.");
+        Serial.println("Falha na conexao WiFi. Nova tentativa em alguns segundos.");
       }
     }
   }
@@ -503,13 +544,13 @@ void loop() {
   // --- LÓGICA DA CÂMERA (Apenas se estiver Configurado) ---
   // A variável systemConfigured garante que a câmera não inicie no modo BLE
   if (systemConfigured && WiFi.status() == WL_CONNECTED && !cameraInitialized) {
-    Serial.println("WiFi Stable. Waiting for power stabilization before Camera Init...");
+    Serial.println("WiFi estavel. Aguardando para iniciar camera...");
     delay(500);
 
     if (initCameraOnce()) {
       cameraInitialized = true;
     } else {
-      Serial.println("Camera Init Failed. Will retry next loop if Wifi stays on.");
+      Serial.println("Falha ao iniciar camera. Nova tentativa no proximo ciclo.");
       delay(2000);
     }
   }
@@ -520,8 +561,15 @@ void loop() {
     unsigned long intervalMs = (unsigned long)coletaIntervalo * 60000;
     if (intervalMs == 0) intervalMs = 60000;
     if (now - lastCaptureTime >= intervalMs) {
-      sendPhoto();
-      lastCaptureTime = now;
+      String uploadResult = sendPhoto();
+      if (uploadResult == "Ok") {
+        lastCaptureTime = now;
+      } else {
+        unsigned long retryMs = (intervalMs > 15000) ? 15000 : intervalMs;
+        if (intervalMs > 3000 && retryMs < 3000) retryMs = 3000;
+        Serial.println("Envio sem sucesso. Ajustando proxima tentativa para janela curta.");
+        lastCaptureTime = now - (intervalMs - retryMs);
+      }
     }
   }
 

@@ -24,9 +24,12 @@ export default function RealMap({
 }: {
   totems: Array<Totem>;
 }) {
+  const firstLat = Number(totems[0]?.latitude ?? 0);
+  const firstLng = Number(totems[0]?.longitude ?? 0);
+
   return (
     <MapContainer
-      center={[totems[0]?.latitude, totems[0]?.longitude]}
+      center={[firstLat, firstLng]}
       zoom={5}
       className="z-0 rounded-md w-full h-full"
     >
@@ -35,7 +38,7 @@ export default function RealMap({
       {totems.map((t) => (
         <Marker
           key={t._id}
-          position={[t.latitude, t.longitude]}
+          position={[Number(t.latitude), Number(t.longitude)]}
           icon={createLucideIcon(38)}
         >
           <Popup>

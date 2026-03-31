@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { Totem } from "../database/models/totens.model";
-import { TotenColeta } from "../database/models/totens_coletas.model";
-import { Usuario } from "../database/models/usuarios.model";
+import { Totem } from "../database/models/totens-model";
+import { TotenColeta } from "../database/models/totens-coletas-model";
+import { Usuario } from "../database/models/usuarios-model";
 import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
@@ -27,22 +27,22 @@ export const createSensorReading = async (req: Request, res: Response) => {
 
     // 1. Validações Iniciais
     if (!req.file) {
-      return res.status(400).json({ error: true, message: "Upload falhou." });
+      return res.status(400).json({ error: true, message: "Upload da imagem falhou." });
     }
 
     if (!totemId || temperatura === undefined || umidade === undefined) {
       await cleanupFile(req.file.path);
-      return res.status(400).json({ error: true, message: "Campos obrigatórios faltando." });
+      return res.status(400).json({ error: true, message: "Campos obrigatorios ausentes (totem_id, temperatura ou umidade)." });
     }
 
     if (!Number.isFinite(tempFloat) || !Number.isFinite(humFloat)) {
       await cleanupFile(req.file.path);
-      return res.status(400).json({ error: true, message: "Temperatura ou umidade inválida." });
+      return res.status(400).json({ error: true, message: "Temperatura ou umidade em formato invalido." });
     }
 
     if (!mongoose.Types.ObjectId.isValid(totemId)) {
       await cleanupFile(req.file.path);
-      return res.status(400).json({ error: true, message: "ID do Totem inválido." });
+      return res.status(400).json({ error: true, message: "ID do totem invalido." });
     }
 
     // 2. Lógica de Renomear o Arquivo
@@ -85,7 +85,7 @@ export const createSensorReading = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       error: false,
-      message: "Leitura registrada com sucesso",
+      message: "Leitura do totem registrada com sucesso",
       file: caminhoBanco
     });
 
@@ -101,7 +101,7 @@ export const createSensorReading = async (req: Request, res: Response) => {
         try { await fs.promises.unlink(req.file.path); } catch (e) { }
       }
     })();
-    return res.status(500).json({ error: true, message: "Erro interno." });
+    return res.status(500).json({ error: true, message: "Erro interno ao registrar leitura do totem." });
   }
 };
 

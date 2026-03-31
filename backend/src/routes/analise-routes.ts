@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import multer from "multer";
-import { analisarImagem } from "../controllers/analise.controller";
-import { authenticateToken } from "../middlewares/authMiddleware";
+import { analisarImagem } from "../controllers/analise-controller";
+import { authenticateToken } from "../middlewares/auth-middleware";
 
 const router = Router();
 

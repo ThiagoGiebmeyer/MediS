@@ -1,7 +1,7 @@
-// src/routes/usuario.routes.ts
+// src/routes/usuario-routes.ts
 import { Router } from "express";
-import { forgotPassword, getProfile, login, register } from "../controllers/usuarios.controller";
-import { authenticateToken } from "../middlewares/authMiddleware";
+import { forgotPassword, getProfile, login, register } from "../controllers/usuarios-controller";
+import { authenticateToken } from "../middlewares/auth-middleware";
 
 const router = Router();
 

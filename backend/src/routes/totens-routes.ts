@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { createTotem, getConfig } from "../controllers/totens.controller";
-import { authenticateToken } from "../middlewares/authMiddleware";
+import { createTotem, getConfig } from "../controllers/totens-controller";
+import { authenticateToken } from "../middlewares/auth-middleware";
 
 const router = Router();
 

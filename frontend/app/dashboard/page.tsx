@@ -36,7 +36,7 @@ import { getDashboardData, postNewTotem } from "@/services/index";
 import { Totem } from "@/types";
 import { isTokenExpired } from "@/utils";
 import dynamic from 'next/dynamic';
-import AnaliseImagemModal from "@/app/components/AnaliseImagemModal";
+import AnaliseImagemModal from "@/app/components/analise-imagem-modal";
 
 // --- HELPER: Gerar ObjectId do MongoDB no Frontend ---
 const generateMongoObjectId = () => {
@@ -558,7 +558,15 @@ const AddTotemModal = ({
   );
 };
 
-const ViewImageModal = ({ isOpen, onClose, data }) => {
+const ViewImageModal = ({
+  isOpen,
+  onClose,
+  data,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  data: any[];
+}) => {
   const [index, setIndex] = useState(0);
 
   // Reseta o index quando o modal abre
@@ -582,12 +590,12 @@ const ViewImageModal = ({ isOpen, onClose, data }) => {
   });
 
   // Funções de navegação (com stopPropagation para não fechar o modal ao clicar na seta)
-  const handlePrev = (e) => {
+  const handlePrev = (e: any) => {
     e.stopPropagation();
     setIndex((prev) => (prev === 0 ? data.length - 1 : prev - 1));
   };
 
-  const handleNext = (e) => {
+  const handleNext = (e: any) => {
     e.stopPropagation();
     setIndex((prev) => (prev === data.length - 1 ? 0 : prev + 1));
   };
@@ -650,7 +658,7 @@ const ViewImageModal = ({ isOpen, onClose, data }) => {
 // --- Main Component ---
 export default function Dashboard() {
   const router = useRouter();
-  const MapContainer = dynamic(() => import("@/app/components/RealMap"), { ssr: false });
+  const MapContainer = dynamic(() => import("@/app/components/real-map"), { ssr: false });
 
   // UI State
   const [isLoading, setIsLoading] = useState(true);

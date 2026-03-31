@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { Usuario, Totem, TotenColeta } from "./src/database/models/initModels";
+import { Usuario, Totem, TotenColeta } from "./src/database/models/init-models";
 import dotenv from "dotenv";
 dotenv.config();
 

@@ -1,6 +1,6 @@
 "use client";
 
-import ThemeControls from "@/app/components/ThemeControls";
+import ThemeControls from "@/app/components/theme-controls";
 import { getProfile } from "@/services";
 import Link from "next/link";
 import { useEffect, useState } from "react";
