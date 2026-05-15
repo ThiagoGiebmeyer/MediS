@@ -3,6 +3,8 @@ import { Totem } from "./totem";
 export interface Measurement {
   temperatura: number;
   umidade: number;
+  precipitacao?: number;
+  imagem: string;
   criado_em: string;
 }
 

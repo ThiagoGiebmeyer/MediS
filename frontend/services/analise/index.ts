@@ -1,4 +1,5 @@
 import api from "@/services/api";
+import { ApiResponse, PaginatedAnalysesResponse } from "@/types";
 
 interface AnaliseResponse {
   error: boolean;
@@ -8,6 +9,23 @@ interface AnaliseResponse {
     timestamp: string;
   };
   messageError?: string;
+}
+
+type AnalysesFilter = {
+  start?: string;
+  end?: string;
+  page?: number;
+  limit?: number;
+};
+
+export async function getAnalysesPage(
+  filters?: AnalysesFilter,
+): Promise<ApiResponse<PaginatedAnalysesResponse>> {
+  const response = await api.get("totem/reading/analises", {
+    params: filters,
+  });
+
+  return response.data;
 }
 
 export const analisarImagem = async (

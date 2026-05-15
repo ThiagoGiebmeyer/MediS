@@ -14,11 +14,13 @@ interface AnaliseResult {
 interface AnaliseImagemModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onAnalysisComplete?: () => void;
 }
 
 export default function AnaliseImagemModal({
   isOpen,
   onClose,
+  onAnalysisComplete,
 }: AnaliseImagemModalProps) {
   const [isCapturing, setIsCapturing] = useState(false);
   const [isAnalysing, setIsAnalysing] = useState(false);
@@ -102,6 +104,7 @@ export default function AnaliseImagemModal({
       if (!resultado.error && resultado.data) {
         setResult(resultado.data);
         toast.success("Análise concluída!");
+        onAnalysisComplete?.();
       } else {
         toast.error(resultado.messageError || "Erro na análise.");
       }
