@@ -1,25 +1,6 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light;
-  --background: #f5f7fb;
-  --text: #0f172a;
-  --text-button: #0f172a;
-  --on-primary: #f8fafc;
-  --border: #e2e8f0;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-alt: #eef2f6;
-  --primary: #2563eb;
-  --primary-dark: #1d4ed8;
-  --muted: #64748b;
-  --input-bg: #ffffff;
-  --input-border: #cbd5f5;
-  --input-text: #0f172a;
-  --bg-gradient: radial-gradient(1200px circle at 10% 10%, #dbeafe 0%, #f8fafc 45%, #eef2f6 100%);
-}
-
-[data-theme="dark"] {
   color-scheme: dark;
   --background: #0b0f14;
   --text: #e2e8f0;
@@ -29,11 +10,30 @@
   --foreground: #e2e8f0;
   --card: #111827;
   --card-alt: #0f172a;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
   --muted: #94a3b8;
   --input-bg: #0f172a;
   --input-border: #334155;
   --input-text: #e2e8f0;
   --bg-gradient: radial-gradient(1000px circle at 10% 10%, #1f2937 0%, #0b0f14 50%, #070a0f 100%);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --background: #f5f7fb;
+  --text: #0f172a;
+  --text-button: #0f172a;
+  --on-primary: #f8fafc;
+  --border: #e2e8f0;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-alt: #eef2f6;
+  --muted: #64748b;
+  --input-bg: #ffffff;
+  --input-border: #cbd5f5;
+  --input-text: #0f172a;
+  --bg-gradient: radial-gradient(1200px circle at 10% 10%, #dbeafe 0%, #f8fafc 45%, #eef2f6 100%);
 }
 
 @theme inline {

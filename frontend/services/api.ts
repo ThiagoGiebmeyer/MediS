@@ -1,7 +1,10 @@
 import axios from "axios";
 
+const ip= process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1";
+const port = process.env.NEXT_PUBLIC_API_PORT || 3001;
+
 const api = axios.create({
-  baseURL: `http://${process.env.NEXT_PUBLIC_API_URL}:${process.env.NEXT_PUBLIC_API_PORT}/api/`,
+  baseURL: `${ip}:${port}/api/`,
 });
 
 api.interceptors.request.use(

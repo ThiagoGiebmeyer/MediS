@@ -24,14 +24,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 try {
-                  const theme = localStorage.getItem('medis-theme') || 'light';
+                  const theme = localStorage.getItem('medis-theme') || 'dark';
                   const primaryId = localStorage.getItem('medis-primary') || 'ocean';
                   
                   const COLOR_PRESETS = {

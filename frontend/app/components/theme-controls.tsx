@@ -22,13 +22,6 @@ const COLOR_PRESETS: ColorPreset[] = [
   { id: "slate", name: "Slate", primary: "#0f766e", primaryDark: "#115e59" }
 ];
 
-const getSystemTheme = (): ThemeMode => {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-};
-
 const applyTheme = (theme: ThemeMode, preset: ColorPreset) => {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
@@ -43,7 +36,7 @@ type ThemeControlsProps = {
 };
 
 export default function ThemeControls({ variant = "floating", alwaysOpen = false }: ThemeControlsProps) {
-  const [theme, setTheme] = useState<ThemeMode>("light");
+  const [theme, setTheme] = useState<ThemeMode>("dark");
   const [primaryId, setPrimaryId] = useState<string>(COLOR_PRESETS[0].id);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -55,7 +48,7 @@ export default function ThemeControls({ variant = "floating", alwaysOpen = false
     const storedTheme = localStorage.getItem(THEME_KEY) as ThemeMode | null;
     const storedPrimary = localStorage.getItem(PRIMARY_KEY);
 
-    const initialTheme = storedTheme || getSystemTheme();
+    const initialTheme = storedTheme || "dark";
     const initialPrimary = storedPrimary || COLOR_PRESETS[0].id;
 
     setTheme(initialTheme);
@@ -72,7 +65,7 @@ export default function ThemeControls({ variant = "floating", alwaysOpen = false
   const containerClasses =
     variant === "inline"
       ? "relative"
-      : "fixed right-6 top-6 z-50";
+      : "fixed right-3 top-3 sm:right-6 sm:top-6 z-50";
 
   const shouldShowPanel = variant === "inline" ? true : isOpen;
 
@@ -93,7 +86,7 @@ export default function ThemeControls({ variant = "floating", alwaysOpen = false
       {shouldShowPanel && (
         <div
           id="theme-popover"
-          className="bg-card/95 shadow-lg backdrop-blur mt-3 p-3 border border-border rounded-2xl w-full"
+          className="bg-card/95 shadow-lg backdrop-blur mt-3 p-3 border border-border rounded-2xl w-[min(16rem,calc(100vw-1.5rem))]"
         >
           <button
             type="button"
