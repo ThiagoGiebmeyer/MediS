@@ -12,7 +12,7 @@
 
 // --- CONFIGURAÇÕES DE SERVIDOR E API ---
 String serverHost = "";
-int serverPort = 3000;
+int serverPort = 3001;
 const char *serverPath = "/api/totem/reading";
 
 // ✅ TOKEN
@@ -47,12 +47,17 @@ bool deviceConnected = false;
 bool shouldScanWifi = false;
 bool requestConnectionTest = false;
 bool systemConfigured = false;  // Define se opera em modo Câmera ou modo Config (BLE)
+bool btConfigMode = false;      // Indica que estamos em modo de configuração via BLE
 
 String targetSSID = "";
 String targetPass = "";
 String totemID = "";
 int coletaIntervalo = 2;
 unsigned long lastCaptureTime = 0;
+
+// Limites para intervalo de coleta (minutos)
+const int COLETA_INTERVALO_MIN = 1;
+const int COLETA_INTERVALO_MAX = 1440;
 
 const unsigned long WIFI_CONNECT_TIMEOUT_MS = 15000;
 const unsigned long AUTO_RETRY_MS = 15000;
@@ -69,6 +74,93 @@ const uint32_t MIN_HEAP_CAPTURE = 45000;
 const uint32_t MIN_HEAP_UPLOAD = 38000;
 const uint32_t MIN_PSRAM_CAPTURE = 70000;
 const size_t UPLOAD_CHUNK_SIZE = 2048;
+const char *MULTIPART_BOUNDARY = "--------------------------Ef1eF1eF1";
+const float TEMP_MIN = 16.0f;
+const float TEMP_MAX = 36.0f;
+const float HUM_MIN = 32.0f;
+const float HUM_MAX = 88.0f;
+const float PRECIP_MIN = 0.0f;
+const float PRECIP_MAX = 50.0f;
+
+float simulatedTemperature = 24.0f;
+float simulatedHumidity = 58.0f;
+float simulatedPrecipitation = 0.0f;
+bool simulatedTelemetryInitialized = false;
+bool simulatedPrecipInitialized = false;
+
+float clampValue(float value, float minValue, float maxValue) {
+  if (value < minValue) return minValue;
+  if (value > maxValue) return maxValue;
+  return value;
+}
+
+float randomFloat(float minValue, float maxValue) {
+  const float normalized = (float)esp_random() / 4294967295.0f;
+  return minValue + normalized * (maxValue - minValue);
+}
+
+void buildSimulatedTelemetry(char *temperatureBuffer, size_t temperatureBufferLen, char *humidityBuffer, size_t humidityBufferLen) {
+  if (!simulatedTelemetryInitialized) {
+    simulatedTemperature = randomFloat(22.0f, 30.0f);
+    simulatedHumidity = randomFloat(45.0f, 72.0f);
+    simulatedTelemetryInitialized = true;
+  }
+
+  const float tempTarget = randomFloat(20.0f, 34.0f);
+  const float tempDrift = randomFloat(-1.4f, 1.4f);
+  simulatedTemperature += ((tempTarget - simulatedTemperature) * 0.45f) + tempDrift;
+  simulatedTemperature = clampValue(simulatedTemperature, TEMP_MIN, TEMP_MAX);
+
+  const float humidityTarget = 62.0f - ((simulatedTemperature - 24.0f) * 1.1f) + randomFloat(-6.0f, 6.0f);
+  const float humidityDrift = randomFloat(-4.0f, 4.0f);
+  simulatedHumidity += ((humidityTarget - simulatedHumidity) * 0.55f) + humidityDrift;
+  simulatedHumidity = clampValue(simulatedHumidity, HUM_MIN, HUM_MAX);
+
+  snprintf(temperatureBuffer, temperatureBufferLen, "%.2f", simulatedTemperature);
+  snprintf(humidityBuffer, humidityBufferLen, "%.2f", simulatedHumidity);
+}
+
+void buildSimulatedPrecipitation(char *precipBuffer, size_t precipBufferLen) {
+  if (!simulatedPrecipInitialized) {
+    simulatedPrecipitation = randomFloat(0.0f, 45.0f);
+    simulatedPrecipInitialized = true;
+  }
+
+  const float rainChance = randomFloat(0.0f, 1.0f);
+  if (rainChance < 0.3f) {
+    const float precipPulse = randomFloat(0.0f, 20.0f);
+    simulatedPrecipitation += precipPulse;
+  } else {
+    simulatedPrecipitation *= 0.92f;
+  }
+
+  simulatedPrecipitation = clampValue(simulatedPrecipitation, PRECIP_MIN, PRECIP_MAX);
+
+  snprintf(precipBuffer, precipBufferLen, "%.2f", simulatedPrecipitation);
+}
+
+String normalizeServerHost(String host) {
+  host.trim();
+
+  if (host.startsWith("http://")) {
+    host = host.substring(7);
+  } else if (host.startsWith("https://")) {
+    host = host.substring(8);
+  }
+
+  int slashIndex = host.indexOf('/');
+  if (slashIndex >= 0) {
+    host = host.substring(0, slashIndex);
+  }
+
+  int colonIndex = host.lastIndexOf(':');
+  if (colonIndex > 0 && host.indexOf(':') == colonIndex) {
+    host = host.substring(0, colonIndex);
+  }
+
+  host.trim();
+  return host;
+}
 
 void logMemorySnapshot(const char *stage) {
   Serial.printf("[MEM] %s | freeHeap=%u | minHeap=%u | maxAlloc=%u", stage, ESP.getFreeHeap(), ESP.getMinFreeHeap(), ESP.getMaxAllocHeap());
@@ -108,13 +200,15 @@ void checkSerialCommand() {
 class MyServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *pServer) override {
     deviceConnected = true;
+    btConfigMode = true;
     shouldScanWifi = true;
-    Serial.println("BLE Device Connected");
+    Serial.println("BLE Device Connected (BT config mode)");
   };
   void onDisconnect(BLEServer *pServer) override {
     deviceConnected = false;
+    btConfigMode = false;
     BLEDevice::startAdvertising();
-    Serial.println("BLE Device Disconnected");
+    Serial.println("BLE Device Disconnected (exit BT config mode)");
   }
 };
 
@@ -156,7 +250,7 @@ class MyCallbacks : public BLECharacteristicCallbacks {
           return;
         }
 
-        if (intervalRec <= 0 || intervalRec > 120) {
+        if (intervalRec < COLETA_INTERVALO_MIN || intervalRec > COLETA_INTERVALO_MAX) {
           Serial.println("Intervalo invalido no payload. Usando valor padrao atual.");
           intervalRec = coletaIntervalo;
         }
@@ -164,9 +258,16 @@ class MyCallbacks : public BLECharacteristicCallbacks {
         targetSSID = ssidRec;
         targetPass = passRec;
         totemID = idRec;
-        serverHost = ipRec;
+        serverHost = normalizeServerHost(ipRec);
         if (portRec > 0) serverPort = portRec;
-        if (intervalRec > 0) coletaIntervalo = intervalRec;
+        if (intervalRec >= COLETA_INTERVALO_MIN && intervalRec <= COLETA_INTERVALO_MAX) {
+          coletaIntervalo = intervalRec;
+          // Persistir imediatamente o intervalo para evitar perda em reinício
+          preferences.begin("totem-config", false);
+          preferences.putInt("interval", coletaIntervalo);
+          preferences.end();
+          Serial.printf("Intervalo persistido via BLE: %d minutos\n", coletaIntervalo);
+        }
 
         Serial.println("Configuracao recebida. Testando conexao WiFi...");
         requestConnectionTest = true;
@@ -264,7 +365,20 @@ String sendPhoto() {
     return "Invalid Config";
   }
 
-  // Tira a foto
+  Serial.printf("Destino do upload: host=%s port=%d\n", serverHost.c_str(), serverPort);
+
+  // Tira a foto (descarta frames em cache para evitar duplicação)
+  // Issue conhecido: ESP32-CAM pode retornar frame anterior se buffer não for limpo
+  for (int attempt = 0; attempt < 5; attempt++) {
+    camera_fb_t *fb_discard = esp_camera_fb_get();
+    if (fb_discard) {
+      Serial.println("Descartando frame cache...");
+      esp_camera_fb_return(fb_discard);
+      delay(100);
+    }
+  }
+
+  // Captura frame "real" após descartes
   camera_fb_t *fb = esp_camera_fb_get();
   if (!fb) {
     Serial.println("Falha na captura da imagem.");
@@ -292,30 +406,83 @@ String sendPhoto() {
   }
   Serial.println("Conexao estabelecida. Enviando cabecalhos...");
 
-  String boundary = "--------------------------Ef1eF1eF1";
+  const size_t boundaryLen = strlen(MULTIPART_BOUNDARY);
+  const char *headerTotem = "Content-Disposition: form-data; name=\"totem_id\"\r\n\r\n";
+  const char *headerTemp = "Content-Disposition: form-data; name=\"temperatura\"\r\n\r\n";
+  const char *headerUmidade = "Content-Disposition: form-data; name=\"umidade\"\r\n\r\n";
+  const char *headerPrecip = "Content-Disposition: form-data; name=\"precipitacao\"\r\n\r\n";
+  const char *headerFile = "Content-Disposition: form-data; name=\"image\"; filename=\"capture.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n";
+  char temperatureValue[12] = { 0 };
+  char humidityValue[12] = { 0 };
+  char precipValue[12] = { 0 };
+  buildSimulatedTelemetry(temperatureValue, sizeof(temperatureValue), humidityValue, sizeof(humidityValue));
+  buildSimulatedPrecipitation(precipValue, sizeof(precipValue));
+  Serial.printf("Leituras simuladas: temperatura=%s C | umidade=%s %% | precipitacao=%s mm\n", temperatureValue, humidityValue, precipValue);
 
-  // Cabeçalho dos metadados
-  String bodyHead = "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"totem_id\"\r\n\r\n" + totemID + "\r\n" + "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"temperatura\"\r\n\r\n25.50\r\n" + "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"umidade\"\r\n\r\n60.00\r\n";
+  const size_t boundaryChunkLen = 2 + boundaryLen + 2;  // -- + boundary + \r\n
+  const size_t multipartTailLen = boundaryLen + 8;       // \r\n-- + boundary + --\r\n
 
-  // Cabeçalho do arquivo
-  String fileHead = "--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"image\"; filename=\"capture.jpg\"\r\n" + "Content-Type: image/jpeg\r\n\r\n";
-
-  // Fechamento
-  String bodyTail = "\r\n--" + boundary + "--\r\n";
-
-  size_t totalLen = bodyHead.length() + fileHead.length() + fb->len + bodyTail.length();
+  size_t totalLen = 0;
+  totalLen += boundaryChunkLen + strlen(headerTotem) + totemID.length() + 2;
+  totalLen += boundaryChunkLen + strlen(headerTemp) + strlen(temperatureValue) + 2;
+  totalLen += boundaryChunkLen + strlen(headerUmidade) + strlen(humidityValue) + 2;
+  totalLen += boundaryChunkLen + strlen(headerPrecip) + strlen(precipValue) + 2;
+  totalLen += boundaryChunkLen + strlen(headerFile) + fb->len;
+  totalLen += multipartTailLen;
 
   // Envio HTTP Headers
-  client.print("POST " + String(serverPath) + " HTTP/1.1\r\n");
-  client.print("Host: " + serverHost + ":" + String(serverPort) + "\r\n");
-  client.print("Authorization: Bearer " + String(apiToken) + "\r\n");
-  client.print("Content-Length: " + String(totalLen) + "\r\n");
-  client.print("Content-Type: multipart/form-data; boundary=" + boundary + "\r\n");
+  client.print("POST ");
+  client.print(serverPath);
+  client.print(" HTTP/1.1\r\n");
+  client.print("Host: ");
+  client.print(serverHost);
+  client.print(":");
+  client.print(serverPort);
+  client.print("\r\n");
+  client.print("Authorization: Bearer ");
+  client.print(apiToken);
+  client.print("\r\n");
+  client.print("Content-Length: ");
+  client.print(totalLen);
+  client.print("\r\n");
+  client.print("Content-Type: multipart/form-data; boundary=");
+  client.print(MULTIPART_BOUNDARY);
+  client.print("\r\n");
   client.print("Connection: close\r\n\r\n");
 
-  // Envio Corpo (Metadados + Header Arquivo)
-  client.print(bodyHead);
-  client.print(fileHead);
+  // Envio Corpo (Metadados + Header Arquivo) sem buffers String grandes
+  client.print("--");
+  client.print(MULTIPART_BOUNDARY);
+  client.print("\r\n");
+  client.print(headerTotem);
+  client.print(totemID);
+  client.print("\r\n");
+
+  client.print("--");
+  client.print(MULTIPART_BOUNDARY);
+  client.print("\r\n");
+  client.print(headerTemp);
+  client.print(temperatureValue);
+  client.print("\r\n");
+
+  client.print("--");
+  client.print(MULTIPART_BOUNDARY);
+  client.print("\r\n");
+  client.print(headerUmidade);
+  client.print(humidityValue);
+  client.print("\r\n");
+
+  client.print("--");
+  client.print(MULTIPART_BOUNDARY);
+  client.print("\r\n");
+  client.print(headerPrecip);
+  client.print(precipValue);
+  client.print("\r\n");
+
+  client.print("--");
+  client.print(MULTIPART_BOUNDARY);
+  client.print("\r\n");
+  client.print(headerFile);
 
   // Envio em chunks fixos para evitar alocacao dinamica recorrente
   Serial.println("Enviando dados da imagem...");
@@ -334,30 +501,45 @@ String sendPhoto() {
     fbLen -= toSend;
   }
 
-  client.print(bodyTail);
+  client.print("\r\n--");
+  client.print(MULTIPART_BOUNDARY);
+  client.print("--\r\n");
   esp_camera_fb_return(fb);
   Serial.println("Upload concluido. Aguardando resposta HTTP...");
   logMemorySnapshot("post-upload");
 
-  // Aguarda primeira linha da resposta para validar status sem acumular payload em RAM
+  // Aguarda primeira linha da resposta para validar status sem String dinamica
   long timeout = millis() + 20000;
-  bool responseStarted = false;
   int statusCode = -1;
-  String statusLine = "";
+  char statusLine[48] = { 0 };
+  size_t statusIdx = 0;
+  bool gotLine = false;
 
   while (millis() < timeout) {
     if (client.available()) {
-      responseStarted = true;
-      statusLine = client.readStringUntil('\n');
-      statusLine.trim();
-      if (statusLine.startsWith("HTTP/1.1 ") || statusLine.startsWith("HTTP/1.0 ")) {
-        statusCode = statusLine.substring(9, 12).toInt();
+      char c = (char)client.read();
+      if (c == '\r') {
+        continue;
       }
-      break;
-    } else if (responseStarted && !client.connected()) {
+      if (c == '\n') {
+        statusLine[statusIdx] = '\0';
+        gotLine = true;
+        break;
+      }
+      if (statusIdx < sizeof(statusLine) - 1) {
+        statusLine[statusIdx++] = c;
+      }
+    } else if (!client.connected()) {
       break;
     }
     delay(10);
+  }
+
+  if (gotLine) {
+    int major = 0;
+    int minor = 0;
+    int parsed = sscanf(statusLine, "HTTP/%d.%d %d", &major, &minor, &statusCode);
+    if (parsed < 3) statusCode = -1;
   }
 
   long drainTimeout = millis() + 1000;
@@ -398,13 +580,13 @@ void executeConnectionTest() {
     delay(200);
   }
 
-  String resp;
+  char resp[96] = { 0 };
   if (connected) {
     Serial.println("BLE test connect: SUCCESS. IP: " + WiFi.localIP().toString());
-    resp = "{\"status\":\"connected\",\"ip\":\"" + WiFi.localIP().toString() + "\"}";
+    snprintf(resp, sizeof(resp), "{\"status\":\"connected\",\"ip\":\"%s\"}", WiFi.localIP().toString().c_str());
 
     if (deviceConnected && pCharacteristic) {
-      pCharacteristic->setValue((uint8_t *)resp.c_str(), resp.length());
+      pCharacteristic->setValue((uint8_t *)resp, strlen(resp));
       pCharacteristic->notify();
       delay(500);
     }
@@ -424,9 +606,9 @@ void executeConnectionTest() {
     ESP.restart();
   } else {
     Serial.println("BLE test connect: FAILED.");
-    resp = "{\"status\":\"error\"}";
+    snprintf(resp, sizeof(resp), "{\"status\":\"error\"}");
     if (deviceConnected && pCharacteristic) {
-      pCharacteristic->setValue((uint8_t *)resp.c_str(), resp.length());
+      pCharacteristic->setValue((uint8_t *)resp, strlen(resp));
       pCharacteristic->notify();
       delay(100);
     }
@@ -449,7 +631,8 @@ void setup() {
   String savedPass = preferences.getString("pass", "");
   totemID = preferences.getString("tid", "");
   serverHost = preferences.getString("srv_ip", "");
-  serverPort = preferences.getInt("srv_port", 3000);
+  serverHost = normalizeServerHost(serverHost);
+  serverPort = preferences.getInt("srv_port", 3001);
   coletaIntervalo = preferences.getInt("interval", 2);
   preferences.end();
 
@@ -556,7 +739,7 @@ void loop() {
   }
 
   // Envio de Foto (Apenas se estiver Configurado e Câmera OK)
-  if (systemConfigured && WiFi.status() == WL_CONNECTED && totemID.length() > 0 && serverHost.length() > 0 && cameraInitialized) {
+  if (systemConfigured && WiFi.status() == WL_CONNECTED && totemID.length() > 0 && serverHost.length() > 0 && cameraInitialized && !btConfigMode) {
     unsigned long now = millis();
     unsigned long intervalMs = (unsigned long)coletaIntervalo * 60000;
     if (intervalMs == 0) intervalMs = 60000;

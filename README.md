@@ -49,7 +49,7 @@ API RESTful que gerencia autenticação, dados de sensores e análise de imagens
 - Gerenciamento de usuários e totens
 - Armazenamento de leituras de sensores com timestamps
 - Upload e processamento de imagens para análise
-- Integração com serviço Python de classificação
+- Integração com Gemini para classificação de imagens
 - Validação com Joi e sanitização de dados
 
 **Estrutura de pastas:**
@@ -66,8 +66,8 @@ backend/
 └── temp/               # Arquivos temporários (gitignored)
 ```
 
-### 3. **IA** (Python + TensorFlow)
-Modelo de deep learning para classificação de fases de crescimento da soja.
+### 3. **IA** (Google Gemini)
+Motor de análise por Gemini para classificação de fases de crescimento da soja.
 
 **Fases identificadas:**
 - **Vegetativas:** VE (emergência), VC (cotilédone), V1-V3 (folhas), Vn (múltiplas folhas)
@@ -76,15 +76,11 @@ Modelo de deep learning para classificação de fases de crescimento da soja.
 **Estrutura de pastas:**
 ```
 ia/
-├── classify-single-image.py  # Script de inferência
-├── generate-and-train.py     # Treinamento do modelo
-├── download-dataset.py       # Geração de dataset sintético
-├── utils/
-│   └── preprocess.py         # Pré-processamento de imagens
-├── models/                   # Modelo treinado (.h5)
-├── datasets/                 # Imagens para treinamento
-└── venv/                     # Ambiente virtual Python
+└── (legado opcional) arquivos antigos de treino, caso ainda existam no projeto
 ```
+
+**Configuração:**
+- API Key do Gemini configurada no backend
 
 ### 4. **Totem** (Arduino C++)
 Firmware para ESP32 com câmera e sensores DHT22 que envia dados via WiFi.
@@ -116,11 +112,9 @@ Firmware para ESP32 com câmera e sensores DHT22 que envia dados via WiFi.
 - **Dev tools:** ts-node-dev, nodemon
 
 ### IA
-- **ML Framework:** TensorFlow 2.15+ / Keras
-- **Processamento:** NumPy, OpenCV, Pillow
-- **Modelo:** CNN (Convolutional Neural Network)
-- **Entrada:** Imagens 224x224 RGB
-- **Saída:** 14 classes (fases de crescimento)
+- **Provedor:** Google Gemini API
+- **Processamento:** envio da imagem em base64 para o modelo
+- **Saída:** fase de crescimento, confiança e resumo em JSON
 
 ### IoT
 - **Plataforma:** Arduino IDE / PlatformIO
@@ -146,10 +140,8 @@ Firmware para ESP32 com câmera e sensores DHT22 que envia dados via WiFi.
 ```
 
 ### IA
-```
-Python: 3.10, 3.11 ou 3.12 (TensorFlow não suporta 3.13+)
-pip: >=23.0
-```
+- Chave válida do Gemini API
+- Acesso de saída HTTPS para `generativelanguage.googleapis.com`
 
 ## Instalação e Configuração
 
@@ -171,7 +163,8 @@ Criar arquivo `.env` na raiz do backend:
 DB_URL=mongodb+srv://usuario:senha@cluster.mongodb.net/medis
 JWT_SECRET=sua_chave_secreta_segura_aqui
 PORT=3001
-USE_MOCK_CLASSIFIER=true  # Mudar para false após treinar modelo
+GEMINI_API_KEY=sua_chave_do_gemini
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 Iniciar servidor:
@@ -196,152 +189,6 @@ Iniciar aplicação:
 ```bash
 npm run dev
 ```
-
-### 4. Configurar IA
-
-**Instalar Python 3.12 (recomendado):**
-```bash
-# Windows (com Chocolatey)
-choco install python312
-
-# macOS (com Homebrew)
-brew install python@3.12
-
-# Linux (Ubuntu/Debian)
-sudo apt install python3.12 python3.12-venv
-```
-
-**Configurar ambiente virtual:**
-```bash
-cd ia
-python3.12 -m venv venv
-
-# Windows
-.\venv\Scripts\Activate.ps1
-
-# macOS/Linux
-source venv/bin/activate
-```
-
-**Instalar dependências:**
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-**Gerar dataset e treinar modelo:**
-```bash
-# Gerar 420 imagens sintéticas
-python download-dataset.py
-
-# Treinar modelo (5 épocas, ~3-5 min)
-python generate-and-train.py
-```
-
-**Ativar modelo no backend:**
-Editar `backend/.env`:
-```env
-USE_MOCK_CLASSIFIER=false
-```
-
-Reiniciar o backend.
-
-## Executando o Projeto
-
-Com todos os componentes configurados:
-
-1. **Backend:** `cd backend && npm run dev` (porta 3001)
-2. **Frontend:** `cd frontend && npm run dev` (porta 3000)
-3. **IA:** Ambiente virtual deve estar ativado para o backend usar
-
-Acessar: http://localhost:3000
-
-## Estrutura de Dados
-
-### Usuário
-```typescript
-{
-  _id: ObjectId,
-  nome: string,
-  sobrenome: string,
-  email: string (único),
-  senha: string (hash bcrypt),
-  criado_em: Date,
-  alterado_em: Date
-}
-```
-
-### Totem
-```typescript
-{
-  _id: ObjectId,
-  nome: string,
-  localizacao: { latitude: number, longitude: number },
-  status: 'ativo' | 'inativo',
-  usuario_id: ObjectId (ref: Usuario)
-}
-```
-
-### Leitura de Sensor
-```typescript
-{
-  _id: ObjectId,
-  totem_id: ObjectId (ref: Totem),
-  temperatura: number,
-  umidade: number,
-  timestamp: Date
-}
-```
-
-### Análise de Imagem
-```typescript
-{
-  fase_crescimento: 'VE' | 'VC' | 'V1' | ... | 'R8',
-  confianca: number (0-1),
-  timestamp: Date
-}
-```
-
-## Fluxo de Análise de Imagem
-
-1. Usuário captura foto via câmera ou faz upload
-2. Frontend envia imagem como FormData para `/api/analise`
-3. Backend valida (tipo JPEG/PNG, tamanho máx 15MB)
-4. Imagem é salva temporariamente em buffer
-5. Script Python `classify-single-image.py` é executado
-6. Modelo CNN processa imagem 224x224
-7. Resultado (fase + confiança) retorna ao frontend
-8. Arquivo temporário é deletado
-
-## Modo Mock (Desenvolvimento)
-
-Para desenvolvimento sem modelo treinado:
-```env
-USE_MOCK_CLASSIFIER=true
-```
-
-Retorna fases aleatórias válidas para testes da interface.
-
-## Segurança
-
-- Senhas com hash bcrypt (salt rounds: 10)
-- JWT com expiração configurável
-- Middleware de autenticação em rotas protegidas
-- Sanitização de inputs do usuário
-- Validação de tipos de arquivo (whitelist)
-- CORS configurado para origens permitidas
-- Variáveis sensíveis em `.env` (gitignored)
-
-## Roadmap
-
-- [ ] Previsão de pragas e doenças
-- [ ] Notificações push para alertas
-- [ ] Exportação de relatórios em PDF
-- [ ] Integração com APIs meteorológicas
-- [ ] Suporte a outras culturas (milho, trigo)
-- [ ] App mobile (React Native)
-- [ ] Dashboard administrativo
-- [ ] Machine learning para predição de colheita
 
 ## Licença
 
