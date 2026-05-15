@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
-import { classificarImagem } from "../services/classificador";
+import { classificarImagem } from "../services/gemini-service";
+import { salvarBufferEmUploads } from "../services/imagem-storage-service";
+import { AnaliseImagem } from "../database/models/analises-imagens-model";
 
 export const analisarImagem = async (req: Request, res: Response) => {
   try {
@@ -31,15 +33,44 @@ export const analisarImagem = async (req: Request, res: Response) => {
 
     console.log("Iniciando classificação com buffer de", buffer.length, "bytes");
 
-    const resultado = await classificarImagem(buffer);
+    const resultado = await classificarImagem(buffer, req.file.mimetype);
 
-    console.log("Resultado da classificação:", resultado);
+    const imagemPersistida = await salvarBufferEmUploads({
+      buffer,
+      originalname: req.file.originalname,
+      prefixo: "manual",
+    });
+
+    await AnaliseImagem.create({
+      imagem: imagemPersistida.caminhoRelativo,
+      cultura: resultado.cultura,
+      origem_analise: "manual",
+      prompt_versao: resultado.prompt_versao,
+      fase_crescimento: resultado.fase_crescimento,
+      analise_status: "concluida",
+      analise_tentativas: 1,
+      analise_finalizada_em: new Date(),
+      analise_erro: undefined,
+      confianca: resultado.confianca,
+      resumo: resultado.resumo,
+      sinais_observados: resultado.sinais_observados,
+      modelo: resultado.modelo,
+      resposta_bruta: resultado.resposta_bruta,
+      usuario_id: (req as any).user?.id,
+    });
+
+    console.log("Resultado da classificação:", resultado.fase_crescimento);
 
     return res.status(200).json({
       error: false,
       data: {
-        fase_crescimento: resultado,
-        confianca: Math.random() * 0.4 + 0.6, // Valor entre 60-100% como exemplo
+        cultura: resultado.cultura,
+        fase_crescimento: resultado.fase_crescimento,
+        confianca: resultado.confianca,
+        resumo: resultado.resumo,
+        sinais_observados: resultado.sinais_observados,
+        modelo: resultado.modelo,
+        prompt_versao: resultado.prompt_versao,
         timestamp: new Date().toISOString(),
       },
     });

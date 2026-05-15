@@ -34,7 +34,7 @@ const uploadMiddleware = (req: Request, res: Response, next: NextFunction) => {
 
   uploadSingle(req, res, (err) => {
     if (err instanceof multer.MulterError) {
-      if (err.code === "FILE_TOO_LARGE") {
+      if (err.code === "LIMIT_FILE_SIZE") {
         return res.status(413).json({
           error: true,
           messageError: "Arquivo muito grande. Máximo 15MB.",

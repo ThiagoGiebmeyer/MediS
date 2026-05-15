@@ -3,5 +3,6 @@
 import { Usuario } from "./usuarios-model";
 import { Totem } from "./totens-model";
 import { TotenColeta } from "./totens-coletas-model";
+import { AnaliseImagem } from "./analises-imagens-model";
 
-export { Usuario, Totem, TotenColeta };
+export { Usuario, Totem, TotenColeta, AnaliseImagem };
