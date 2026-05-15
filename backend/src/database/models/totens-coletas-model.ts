@@ -3,6 +3,7 @@ import { Schema, model, Types } from "mongoose";
 export interface ITotenColeta {
   temperatura: number;
   umidade: number;
+  precipitacao?: number;
   imagem: string;
   observacao?: string;
   totem_id: Types.ObjectId;
@@ -19,6 +20,10 @@ const totenColetaSchema = new Schema<ITotenColeta>(
     umidade: {
       type: Number,
       required: true,
+    },
+    precipitacao: {
+      type: Number,
+      required: false,
     },
     imagem: {
       type: String,

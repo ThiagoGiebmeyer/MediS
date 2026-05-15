@@ -1,4 +1,6 @@
 {
+  "include": ["src/**/*.ts"],
+  "exclude": ["seed.ts", "seed.js", "dist"],
   "compilerOptions": {
     "target": "es2020",
     "module": "commonjs",

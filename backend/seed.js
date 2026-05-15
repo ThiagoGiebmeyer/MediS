@@ -1,0 +1,92 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = __importDefault(require("mongoose"));
+const init_models_1 = require("./src/database/models/init-models");
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+// 🔌 Conexão com MongoDB
+const MONGO_URI = process.env.DB_URL || ''; // ajuste se necessário
+async function runSeed() {
+    await mongoose_1.default.connect(MONGO_URI);
+    console.log("🔌 Conectado ao MongoDB");
+    console.log("🧹 Limpando coleções...");
+    await init_models_1.Usuario.deleteMany({});
+    await init_models_1.Totem.deleteMany({});
+    await init_models_1.TotenColeta.deleteMany({});
+    // 👤 Criar usuário
+    const usuario = await init_models_1.Usuario.create({
+        nome: "Thiago",
+        sobrenome: "Giebmeyer",
+        email: "giebmeyerthiago@gmail.com",
+        senha: "$2b$10$vACbo5gG8uGhEerzfDZ5E.GlMvN8LwEf/QdzeCk/BnrxRCaeMFAt.",
+    });
+    const usuario2 = await init_models_1.Usuario.create({
+        nome: "Thiago",
+        sobrenome: "Giebmeyer",
+        email: "g@gmail.com",
+        senha: "$2b$10$vACbo5gG8uGhEerzfDZ5E.GlMvN8LwEf/QdzeCk/BnrxRCaeMFAt.",
+    });
+    console.log("👤 Usuário criado:", usuario._id);
+    console.log("👤 Usuário2 criado:", usuario2._id);
+    // 🏢 Criar totem
+    const totem = await init_models_1.Totem.create({
+        nome: "Totem Central",
+        latitude: "-27.5311",
+        longitude: "-48.4567",
+        usuario_id: usuario._id,
+    });
+    console.log("📟 Totem criado:", totem._id);
+    const totem2 = await init_models_1.Totem.create({
+        nome: "Totem Secundário",
+        latitude: "-27.2311",
+        longitude: "-48.4567",
+        intervalo_coleta: 30,
+        usuario_id: usuario._id,
+    });
+    console.log("📟 Totem2 criado:", totem2._id);
+    const totem3 = await init_models_1.Totem.create({
+        nome: "Totem Secundário",
+        latitude: "-27.8611",
+        longitude: "-48.4567",
+        usuario_id: usuario2._id,
+    });
+    console.log("📟 Totem3 criado:", totem3._id);
+    // 📊 Criar coleta
+    const coletasData = [
+        { temperatura: 22.5, umidade: 55, estagio: "normal", hora_coleta: "11:30" },
+        { temperatura: 23.1, umidade: 50, estagio: "normal", hora_coleta: "11:35" },
+        { temperatura: 24.0, umidade: 52, estagio: "alerta", hora_coleta: "11:40" },
+        { temperatura: 25.2, umidade: 57, estagio: "alerta", hora_coleta: "11:45" },
+        { temperatura: 26.4, umidade: 60, estagio: "critico", hora_coleta: "11:50" },
+    ];
+    const coletasData2 = [
+        { temperatura: 50.0, umidade: 48, estagio: "alerta", hora_coleta: "23:40" },
+        { temperatura: 15.5, umidade: 12, estagio: "normal", hora_coleta: "10:30" },
+        { temperatura: -3.1, umidade: 10, estagio: "normal", hora_coleta: "05:35" },
+    ];
+    const coletasCriadas = [];
+    const coletasCriadas2 = [];
+    for (const c of coletasData) {
+        const coleta = await init_models_1.TotenColeta.create({
+            temperatura: c.temperatura,
+            umidade: c.umidade,
+            imagem: "imagem_base64_aqui",
+            estagio: c.estagio,
+            data_coleta: "2025-02-14",
+            hora_coleta: c.hora_coleta,
+            totem_id: totem._id,
+        });
+        coletasCriadas.push(coleta);
+        console.log("📊 Coleta criada:", coleta._id);
+    }
+    console.log("Total de coletas criadas:", coletasCriadas.length);
+    console.log("✅ SEED FINALIZADO!");
+    await mongoose_1.default.disconnect();
+}
+runSeed().catch((err) => {
+    console.error("Inconsistência no seed:", err);
+    mongoose_1.default.disconnect();
+});

@@ -3,12 +3,15 @@ import multer from "multer"; // Necessário apenas para checar o tipo do erro
 
 // ✅ Importe a configuração que criamos
 import { upload } from "../config/multer";
+import { authenticateToken } from "../middlewares/auth-middleware";
 
 import {
   createSensorReading,
+  getAnalisesPaginadas,
   getAllReadings,
   getLastReading,
-  getReadingStats
+  getReadingStats,
+  getReportOverview,
 } from "../controllers/totens-coletas-controller";
 
 const router = Router();
@@ -39,8 +42,10 @@ const uploadMiddleware = (req: Request, res: Response, next: NextFunction) => {
 // --- ROTAS ---
 router.post("/", uploadMiddleware, createSensorReading);
 
-router.get("/", getAllReadings);
-router.get("/last", getLastReading);
-router.get("/stats", getReadingStats);
+router.get("/", authenticateToken, getAllReadings);
+router.get("/last", authenticateToken, getLastReading);
+router.get("/stats", authenticateToken, getReadingStats);
+router.get("/report", authenticateToken, getReportOverview);
+router.get("/analises", authenticateToken, getAnalisesPaginadas);
 
 export default router;
