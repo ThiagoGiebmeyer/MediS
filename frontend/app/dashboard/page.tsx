@@ -24,12 +24,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
   CartesianGrid,
+  ComposedChart,
   Line,
   LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
+  Legend,
 } from "recharts";
 
 import {
@@ -837,18 +839,11 @@ export default function Dashboard() {
     return (total / selectedMeasurements.length).toFixed(1) + "%";
   }, [selectedMeasurements]);
 
-  const temperatureChartData = useMemo(() => {
+  const temperatureAndHumidityChartData = useMemo(() => {
     return selectedMeasurements.map((c) => ({
-      value: c.temperatura,
       timestamp: new Date(c.criado_em).toLocaleString(),
-      image: c.imagem,
-    }));
-  }, [selectedMeasurements]);
-
-  const humidityChartData = useMemo(() => {
-    return selectedMeasurements.map((c) => ({
-      value: c.umidade,
-      timestamp: new Date(c.criado_em).toLocaleString(),
+      temperatura: c.temperatura,
+      umidade: c.umidade,
       image: c.imagem,
     }));
   }, [selectedMeasurements]);
@@ -1242,7 +1237,7 @@ export default function Dashboard() {
       <ViewImageModal
         isOpen={isOpenImgModal}
         onClose={() => setIsOpenImgModal(false)}
-        data={temperatureChartData}
+        data={temperatureAndHumidityChartData}
       />
 
       <AnaliseImagemModal
@@ -1485,37 +1480,41 @@ export default function Dashboard() {
                 </div>
               </section>
 
-              <section className="gap-6 grid md:grid-cols-2 lg:grid-cols-3">
+              <section className="gap-6 grid md:grid-cols-2 lg:grid-cols-2">
                 <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel">
                   <div className="flex items-center gap-2 mb-6 font-semibold text-foreground text-lg">
-                    <BarChart2 size={18} className="text-primary" /> Temperatura
-                    (ºC)
+                    <BarChart2 size={18} className="text-primary" /> Temperatura e Umidade
                   </div>
-                  {temperatureChartData.length === 0 ? (
+                  {temperatureAndHumidityChartData.length === 0 ? (
                     <div className="flex justify-center items-center h-70 text-muted text-sm">
                       Nenhum registro coletado pelo totem...
                     </div>
                   ) : (
-                        <div className="h-70">
+                    <div className="h-70">
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={temperatureChartData}
-                          margin={{ top: 15, right: 15, left: -15, bottom: 5 }}
+                        <ComposedChart
+                          data={temperatureAndHumidityChartData}
+                          margin={{ top: 15, right: 30, left: -15, bottom: 5 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                           <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} stroke="#94a3b8" />
-                          <YAxis stroke="#94a3b8" label={{ value: "°C", angle: -90, position: "insideLeft" }} />
-                          <Tooltip
-                            content={
-                              <CustomTooltip
-                                leftText={"Temperatura: "}
-                                rightTect={"ºC"}
-                              />
-                            }
+                          <YAxis
+                            yAxisId="left"
+                            stroke="#94a3b8"
+                            label={{ value: "°C", angle: -90, position: "insideLeft" }}
                           />
+                          <YAxis
+                            yAxisId="right"
+                            orientation="right"
+                            stroke="#94a3b8"
+                            label={{ value: "%", angle: 90, position: "insideRight" }}
+                          />
+                          <Tooltip />
+                          <Legend wrapperStyle={{ paddingTop: "20px" }} />
                           <Line
+                            yAxisId="left"
                             type="monotone"
-                            dataKey="value"
+                            dataKey="temperatura"
                             stroke="#F59E0B"
                             strokeWidth={3}
                             dot={{ r: 3, fill: "#F59E0B" }}
@@ -1525,42 +1524,12 @@ export default function Dashboard() {
                               onClick: () => setIsOpenImgModal(true),
                             }}
                             isAnimationActive={true}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel">
-                  <div className="flex items-center gap-2 mb-6 font-semibold text-foreground text-lg">
-                    <BarChart2 size={18} className="text-primary" /> Umidade (%)
-                  </div>
-                  {humidityChartData.length === 0 ? (
-                    <div className="flex justify-center items-center h-70 text-muted text-sm">
-                      Nenhum registro coletado pelo totem...
-                    </div>
-                  ) : (
-                    <div className="h-70">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={humidityChartData}
-                          margin={{ top: 15, right: 15, left: -15, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                          <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} stroke="#94a3b8" />
-                          <YAxis stroke="#94a3b8" label={{ value: "%", angle: -90, position: "insideLeft" }} />
-                          <Tooltip
-                            content={
-                              <CustomTooltip
-                                leftText={"Umidade: "}
-                                rightTect={"%"}
-                              />
-                            }
+                            name="Temperatura (°C)"
                           />
                           <Line
+                            yAxisId="right"
                             type="monotone"
-                            dataKey="value"
+                            dataKey="umidade"
                             stroke="#06B6D4"
                             strokeWidth={3}
                             dot={{ r: 3, fill: "#06B6D4" }}
@@ -1570,8 +1539,9 @@ export default function Dashboard() {
                               onClick: () => setIsOpenImgModal(true),
                             }}
                             isAnimationActive={true}
+                            name="Umidade (%)"
                           />
-                        </LineChart>
+                        </ComposedChart>
                       </ResponsiveContainer>
                     </div>
                   )}
