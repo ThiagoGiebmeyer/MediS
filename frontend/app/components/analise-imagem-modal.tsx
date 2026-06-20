@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 interface AnaliseResult {
   fase_crescimento: string;
   confianca: number;
+  justificativa_confianca: string;
   timestamp: string;
 }
 
@@ -103,8 +104,8 @@ export default function AnaliseImagemModal({
 
       if (!resultado.error && resultado.data) {
         setResult(resultado.data);
+        setPreviewImage(null);
         toast.success("Análise concluída!");
-        onAnalysisComplete?.();
       } else {
         toast.error(resultado.messageError || "Erro na análise.");
       }
@@ -125,11 +126,16 @@ export default function AnaliseImagemModal({
     }
   };
 
+  const handleClose = () => {
+    onAnalysisComplete?.();
+    onClose();
+  };
+
   return (
     <div className="z-50 fixed inset-0 flex justify-center items-center bg-black/50 backdrop-blur p-4">
-      <div className="bg-card/95 shadow-2xl border border-border rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto glow-panel">
+      <div className="flex flex-col bg-card/95 shadow-2xl border border-border rounded-3xl w-full max-w-2xl max-h-[calc(100vh-2rem)] overflow-hidden glow-panel">
         {/* Header */}
-        <div className="top-0 sticky flex justify-between items-center bg-card/80 p-6 border-border border-b">
+        <div className="flex justify-between items-center bg-card/80 p-6 border-border border-b shrink-0">
           <div>
             <h2 className="font-semibold text-foreground text-2xl">
               Análise em Tempo Real
@@ -139,7 +145,7 @@ export default function AnaliseImagemModal({
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="hover:bg-card-alt p-2 rounded-lg transition-colors cursor-pointer"
           >
             <X className="text-muted hover:text-foreground" size={24} />
@@ -147,10 +153,10 @@ export default function AnaliseImagemModal({
         </div>
 
         {/* Conteúdo */}
-        <div className="p-6">
+        <div className="flex-1 p-6 min-h-0 overflow-y-auto no-scrollbar">
           {/* Resultado */}
           {result && (
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 mb-6 p-6 border border-primary/20 rounded-2xl">
+            <div className="bg-linear-to-br from-primary/10 to-primary/5 mb-6 p-6 border border-primary/20 rounded-2xl">
               <div className="space-y-4">
                 <div>
                   <p className="text-muted text-sm uppercase tracking-[0.2em]">
@@ -178,6 +184,13 @@ export default function AnaliseImagemModal({
                       </span>
                     </div>
                   </div>
+                </div>
+
+                <div>
+                  <p className="text-muted text-sm">Justificativa da confiança</p>
+                  <p className="bg-background mt-2 p-3 rounded-lg text-foreground text-sm leading-relaxed">
+                    {result.justificativa_confianca}
+                  </p>
                 </div>
 
                 <button
@@ -219,7 +232,7 @@ export default function AnaliseImagemModal({
           )}
 
           {/* Preview */}
-          {previewImage && !isCapturing && (
+          {previewImage && !isCapturing && !result && (
             <div className="space-y-4 mb-6">
               <div className="bg-background rounded-2xl overflow-hidden">
                 <img
@@ -249,7 +262,7 @@ export default function AnaliseImagemModal({
             <div className="gap-4 grid grid-cols-2">
               <button
                 onClick={startCamera}
-                className="group flex flex-col justify-center items-center gap-3 bg-gradient-to-br from-primary/20 hover:from-primary/30 to-primary/10 hover:to-primary/15 p-6 border border-primary/30 rounded-2xl transition-colors cursor-pointer"
+                className="group flex flex-col justify-center items-center gap-3 bg-linear-to-br from-primary/20 hover:from-primary/30 to-primary/10 hover:to-primary/15 p-6 border border-primary/30 rounded-2xl transition-colors cursor-pointer"
               >
                 <div className="bg-primary/20 group-hover:bg-primary/30 p-3 rounded-xl transition-colors">
                   <Camera
@@ -264,7 +277,7 @@ export default function AnaliseImagemModal({
 
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="group flex flex-col justify-center items-center gap-3 bg-gradient-to-br from-primary/20 hover:from-primary/30 to-primary/10 hover:to-primary/15 p-6 border border-primary/30 rounded-2xl transition-colors cursor-pointer"
+                className="group flex flex-col justify-center items-center gap-3 bg-linear-to-br from-primary/20 hover:from-primary/30 to-primary/10 hover:to-primary/15 p-6 border border-primary/30 rounded-2xl transition-colors cursor-pointer"
               >
                 <div className="bg-primary/20 group-hover:bg-primary/30 p-3 rounded-xl transition-colors">
                   <Upload

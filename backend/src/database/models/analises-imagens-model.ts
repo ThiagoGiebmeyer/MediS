@@ -9,6 +9,7 @@ export interface IAnaliseImagem {
   totem_id?: Types.ObjectId;
   fase_crescimento?: string;
   confianca?: number;
+  justificativa_confianca?: string;
   resumo?: string;
   sinais_observados?: string[];
   modelo?: string;
@@ -66,6 +67,11 @@ const analiseImagemSchema = new Schema<IAnaliseImagem>(
     confianca: {
       type: Number,
       required: false,
+    },
+    justificativa_confianca: {
+      type: String,
+      required: false,
+      default: "",
     },
     resumo: {
       type: String,

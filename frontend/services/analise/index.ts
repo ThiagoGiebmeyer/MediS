@@ -6,6 +6,7 @@ interface AnaliseResponse {
   data?: {
     fase_crescimento: string;
     confianca: number;
+    justificativa_confianca: string;
     timestamp: string;
   };
   messageError?: string;

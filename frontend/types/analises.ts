@@ -7,6 +7,7 @@ export interface AnalysisItem {
   origem_analise: "manual" | "totem";
   fase_crescimento: string;
   confianca: number;
+  justificativa_confianca: string;
   resumo: string;
   sinais_observados: string[];
   modelo: string;

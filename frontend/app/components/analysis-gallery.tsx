@@ -68,7 +68,7 @@ export default function AnalysisGallery({
             >
               <ChevronLeft size={14} /> Anterior
             </button>
-            <span className="bg-background px-4 py-2 border border-border rounded-full text-xs font-medium">
+            <span className="bg-background px-4 py-2 border border-border rounded-full font-medium text-xs">
               Página {pagination?.page || 1} de {pagination?.totalPages || 1}
             </span>
             <button
@@ -84,7 +84,7 @@ export default function AnalysisGallery({
 
         {isLoading ? (
           <div className="flex justify-center items-center py-16 text-muted text-sm">
-            <div className="border-primary border-b-2 rounded-full w-8 h-8 animate-spin mr-3"></div>
+            <div className="mr-3 border-primary border-b-2 rounded-full w-8 h-8 animate-spin"></div>
             Carregando análises...
           </div>
         ) : analyses.length === 0 ? (
@@ -98,12 +98,12 @@ export default function AnalysisGallery({
                 key={`${analysis.imagem}-${analysis.criado_em || analysis.resumo}`}
                 type="button"
                 onClick={() => setSelectedAnalysis(analysis)}
-                className="group bg-card-alt/80 hover:bg-card-alt border border-border hover:border-primary/50 rounded-3xl h-full text-left transition-all duration-200 cursor-pointer hover:shadow-lg"
+                className="group bg-card-alt/80 hover:bg-card-alt hover:shadow-lg border border-border hover:border-primary/50 rounded-3xl h-full text-left transition-all duration-200 cursor-pointer"
               >
                 <div className="flex flex-col gap-4 p-6 h-full">
                   <div className="flex justify-between items-start gap-3">
                     <div>
-                      <div className="flex flex-wrap gap-2 text-[10px] text-muted uppercase tracking-[0.15em] font-medium">
+                      <div className="flex flex-wrap gap-2 font-medium text-[10px] text-muted uppercase tracking-[0.15em]">
                         <span className="bg-background px-3 py-1 rounded-full">
                           {analysis.cultura}
                         </span>
@@ -115,21 +115,26 @@ export default function AnalysisGallery({
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-4 text-xs">
-                        <span className="bg-primary/10 px-3 py-1 rounded-full text-primary font-medium">
+                        <span className="bg-primary/10 px-3 py-1 rounded-full font-medium text-primary">
                           Fase {analysis.fase_crescimento}
                         </span>
-                        <span className="bg-primary/10 px-3 py-1 rounded-full text-primary font-medium">
+                        <span className="bg-primary/10 px-3 py-1 rounded-full font-medium text-primary">
                           Confiança {Math.round(analysis.confianca * 100)}%
                         </span>
                       </div>
                     </div>
-                    <div className="bg-background/90 px-3 py-2 rounded-full font-semibold text-[10px] text-foreground uppercase tracking-[0.2em] flex-shrink-0">
+                    <div className="bg-background/90 px-3 py-2 rounded-full font-semibold text-[10px] text-foreground uppercase tracking-[0.2em] shrink-0">
                       {getStatusLabel(analysis.analise_status)}
                     </div>
                   </div>
 
-                  <p className="text-muted text-sm leading-relaxed line-clamp-3">
+                  <p className="text-muted text-sm line-clamp-3 leading-relaxed">
                     {analysis.resumo || "Sem resumo disponível."}
+                  </p>
+
+                  <p className="text-muted text-xs line-clamp-2 leading-relaxed">
+                    <span className="font-semibold text-foreground">Justificativa da confiança:</span>{" "}
+                    {analysis.justificativa_confianca || "Sem justificativa disponível."}
                   </p>
 
                   {analysis.sinais_observados.length > 0 && (
@@ -145,13 +150,13 @@ export default function AnalysisGallery({
                     </div>
                   )}
 
-                  <div className="flex sm:flex-row flex-col sm:justify-between sm:items-center gap-2 mt-auto pt-4 border-t border-border/50 text-muted text-xs">
+                  <div className="flex sm:flex-row flex-col sm:justify-between sm:items-center gap-2 mt-auto pt-4 border-border/50 border-t text-muted text-xs">
                     <p>
                       {analysis.criado_em
                         ? new Date(analysis.criado_em).toLocaleString("pt-BR")
                         : "Data indisponível"}
                     </p>
-                    <span className="font-semibold text-primary group-hover:translate-x-1 transition-transform">
+                    <span className="font-semibold text-primary transition-transform group-hover:translate-x-1">
                       Ver imagem →
                     </span>
                   </div>
@@ -173,7 +178,7 @@ export default function AnalysisGallery({
           >
             <div className="flex justify-between items-center gap-3 px-6 py-5 border-border border-b">
               <div>
-                <p className="text-muted text-xs uppercase tracking-[0.25em] font-medium">
+                <p className="font-medium text-muted text-xs uppercase tracking-[0.25em]">
                   Pré-visualização da análise
                 </p>
                 <h3 className="mt-2 font-semibold text-foreground text-lg">
@@ -197,74 +202,78 @@ export default function AnalysisGallery({
                 <img
                   src={buildImageUrl(selectedAnalysis.imagem)}
                   alt="Imagem da análise selecionada"
-                  className="w-full max-h-full object-contain rounded-lg"
+                  className="rounded-lg w-full max-h-full object-contain"
                 />
               </div>
 
-              <div className="p-6 overflow-auto bg-card-alt/30 space-y-6">
+              <div className="space-y-6 bg-card-alt/30 p-6 overflow-auto">
                 <div>
-                  <p className="text-muted text-xs uppercase tracking-[0.2em] font-medium mb-3">
+                  <p className="mb-3 font-medium text-muted text-xs uppercase tracking-[0.2em]">
                     Classificação
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="bg-background px-3 py-2 rounded-full text-xs font-medium text-foreground border border-border">
+                    <span className="bg-background px-3 py-2 border border-border rounded-full font-medium text-foreground text-xs">
                       {selectedAnalysis.cultura}
                     </span>
-                    <span className="bg-background px-3 py-2 rounded-full text-xs font-medium text-foreground border border-border">
+                    <span className="bg-background px-3 py-2 border border-border rounded-full font-medium text-foreground text-xs">
                       {selectedAnalysis.origem_analise === "manual" ? "Manual" : "Totem"}
                     </span>
-                    <span className="bg-background px-3 py-2 rounded-full text-xs font-medium text-foreground border border-border">
+                    <span className="bg-background px-3 py-2 border border-border rounded-full font-medium text-foreground text-xs">
                       {selectedAnalysis.analise_status}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-muted text-xs uppercase tracking-[0.2em] font-medium mb-3">
+                  <p className="mb-3 font-medium text-muted text-xs uppercase tracking-[0.2em]">
                     Indicadores
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="bg-primary/15 px-3 py-2 rounded-full text-xs font-medium text-primary">
+                    <span className="bg-primary/15 px-3 py-2 rounded-full font-medium text-primary text-xs">
                       Fase {selectedAnalysis.fase_crescimento}
                     </span>
-                    <span className="bg-primary/15 px-3 py-2 rounded-full text-xs font-medium text-primary">
+                    <span className="bg-primary/15 px-3 py-2 rounded-full font-medium text-primary text-xs">
                       Confiança {Math.round(selectedAnalysis.confianca * 100)}%
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-2 pt-2">
-                  <p className="text-muted text-xs uppercase tracking-[0.2em] font-medium">
+                  <p className="font-medium text-muted text-xs uppercase tracking-[0.2em]">
                     Informações
                   </p>
                   <div className="space-y-3 text-muted text-sm">
                     <p>
-                      <span className="font-semibold text-foreground block mb-1">Totem:</span>
+                      <span className="block mb-1 font-semibold text-foreground">Totem:</span>
                       {selectedAnalysis.totem?.nome || "Sem totem"}
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground block mb-1">Data:</span>
+                      <span className="block mb-1 font-semibold text-foreground">Data:</span>
                       {selectedAnalysis.criado_em
                         ? new Date(selectedAnalysis.criado_em).toLocaleString("pt-BR")
                         : "Data indisponível"}
                     </p>
                     <p>
-                      <span className="font-semibold text-foreground block mb-1">Resumo:</span>
+                      <span className="block mb-1 font-semibold text-foreground">Resumo:</span>
                       {selectedAnalysis.resumo || "Sem resumo disponível."}
+                    </p>
+                    <p>
+                      <span className="block mb-1 font-semibold text-foreground">Justificativa da confiança:</span>
+                      {selectedAnalysis.justificativa_confianca || "Sem justificativa disponível."}
                     </p>
                   </div>
                 </div>
 
                 {selectedAnalysis.sinais_observados.length > 0 && (
-                  <div className="pt-2 border-t border-border/50">
-                    <p className="text-muted text-xs uppercase tracking-[0.2em] font-medium mb-3">
+                  <div className="pt-2 border-border/50 border-t">
+                    <p className="mb-3 font-medium text-muted text-xs uppercase tracking-[0.2em]">
                       Sinais observados
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {selectedAnalysis.sinais_observados.map((signal) => (
                         <span
                           key={signal}
-                          className="bg-card-alt px-3 py-2 border border-border rounded-full text-xs text-foreground font-medium"
+                          className="bg-card-alt px-3 py-2 border border-border rounded-full font-medium text-foreground text-xs"
                         >
                           {signal}
                         </span>

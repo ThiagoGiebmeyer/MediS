@@ -102,6 +102,7 @@ const processarJob = async () => {
         prompt_versao: resultado.prompt_versao,
         fase_crescimento: resultado.fase_crescimento,
         confianca: resultado.confianca,
+        justificativa_confianca: resultado.justificativa_confianca,
         resumo: resultado.resumo,
         sinais_observados: resultado.sinais_observados,
         modelo: resultado.modelo,

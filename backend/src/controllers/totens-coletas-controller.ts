@@ -59,6 +59,7 @@ type AnalysisWithDate = {
   usuario_id?: mongoose.Types.ObjectId;
   fase_crescimento?: string;
   confianca?: number;
+  justificativa_confianca?: string;
   resumo?: string;
   sinais_observados?: string[];
   modelo?: string;
@@ -75,6 +76,7 @@ type SerializedAnalysis = {
   origem_analise: "manual" | "totem";
   fase_crescimento: string;
   confianca: number;
+  justificativa_confianca: string;
   resumo: string;
   sinais_observados: string[];
   modelo: string;
@@ -271,6 +273,7 @@ const serializeAnalysis = (
     origem_analise: analysis.origem_analise || (analysis.usuario_id ? "manual" : "totem"),
     fase_crescimento: analysis.fase_crescimento || "desconhecido",
     confianca: analysis.confianca ?? 0,
+    justificativa_confianca: analysis.justificativa_confianca || "",
     resumo: analysis.resumo || "",
     sinais_observados: analysis.sinais_observados || [],
     modelo: analysis.modelo || "",
@@ -564,6 +567,7 @@ export const createSensorReading = async (req: Request, res: Response) => {
       cultura: "soja",
       origem_analise: "totem",
       fase_crescimento: "desconhecido",
+      justificativa_confianca: "",
       analise_status: "pendente",
       analise_tentativas: 0,
     });
