@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
   CartesianGrid,
@@ -801,6 +801,8 @@ export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardDataItem[]>([]);
   const [totems, setTotems] = useState<Totem[]>([]);
   const [selectedTotemId, setSelectedTotemId] = useState<string>("");
+  const [isTotemDropdownOpen, setIsTotemDropdownOpen] = useState(false);
+  const totemDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Form State
   const [newTotemName, setNewTotemName] = useState("");
@@ -818,6 +820,11 @@ export default function Dashboard() {
       )?.coletas || []
     );
   }, [dashboardData, selectedTotemId]);
+
+  const selectedTotem = useMemo(
+    () => totems.find((totem) => String(totem._id) === String(selectedTotemId)) || null,
+    [totems, selectedTotemId],
+  );
 
   const averageTemperature = useMemo(() => {
     if (selectedMeasurements.length === 0) return "-";
@@ -1046,6 +1053,24 @@ export default function Dashboard() {
       setIntervalo("");
     }
   }, [isAddTotemModalOpen]);
+
+  useEffect(() => {
+    if (!isTotemDropdownOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        totemDropdownRef.current &&
+        !totemDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsTotemDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isTotemDropdownOpen]);
 
   // --- Handler de Criação com ID Customizado ---
   const handleCreateTotem = async (customId?: string) => {
@@ -1365,7 +1390,7 @@ export default function Dashboard() {
           {viewMode === "charts" && (
             <div className="flex flex-col gap-6">
               <section className="gap-4 grid md:grid-cols-3">
-                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
+                <div className="z-20 relative bg-card/80 shadow-lg p-5 border border-border rounded-3xl overflow-visible">
                   <div className="flex justify-between items-center">
                     <span className="text-muted text-sm">Totem ativo</span>
                     <button
@@ -1375,25 +1400,87 @@ export default function Dashboard() {
                       {rangeLabel}
                     </button>
                   </div>
-                  <div className="relative mt-4">
+                  <div className="relative mt-4" ref={totemDropdownRef}>
                     {totems.length === 0 ? (
                       <span className="font-semibold text-foreground text-2xl">
                         -
                       </span>
                     ) : (
                       <>
-                        <select
-                          value={selectedTotemId}
-                          onChange={(e) => setSelectedTotemId(e.target.value)}
-                          className="bg-background px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary w-full font-semibold text-foreground text-lg appearance-none"
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setIsTotemDropdownOpen((currentOpen) => !currentOpen)
+                          }
+                          className="group flex justify-between items-center gap-3 bg-background/80 hover:bg-background px-4 py-3 border border-primary/70 hover:border-primary rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary w-full text-left transition-colors"
                         >
-                          {totems.map((t) => (
-                            <option key={t._id} value={t._id}>
-                              {t.nome?.toUpperCase() || ""}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="right-0 absolute inset-y-0 flex items-center pr-3 text-muted pointer-events-none">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground text-2xl truncate">
+                              {selectedTotem?.nome?.toUpperCase() || "SELECIONE UM TOTEM"}
+                            </p>
+                            <p className="mt-1 text-muted text-xs uppercase tracking-[0.18em]">
+                              {selectedTotem?._id
+                                ? `ID ${selectedTotem._id.slice(-6).toUpperCase()}`
+                                : "SEM IDENTIFICADOR"}
+                            </p>
+                          </div>
+                          <div className="flex justify-center items-center bg-card-alt/80 rounded-full w-9 h-9 text-muted group-hover:text-primary transition-colors">
+                            <svg
+                              className={`w-5 h-5 transition-transform ${isTotemDropdownOpen ? "rotate-180" : "rotate-0"}`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </div>
+                        </button>
+
+                        {isTotemDropdownOpen && (
+                          <div className="top-[calc(100%+0.5rem)] right-0 left-0 z-20 absolute bg-card shadow-2xl border border-border rounded-2xl overflow-hidden">
+                            <ul className="p-2 max-h-56 overflow-y-auto">
+                              {totems.map((totem) => {
+                                const isActive =
+                                  String(totem._id) === String(selectedTotemId);
+
+                                return (
+                                  <li key={totem._id}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedTotemId(totem._id);
+                                        setIsTotemDropdownOpen(false);
+                                      }}
+                                      className={`w-full rounded-xl px-3 py-3 text-left transition-colors ${
+                                        isActive
+                                          ? "bg-primary/15 border border-primary/40"
+                                          : "hover:bg-card-alt/80 border border-transparent"
+                                      }`}
+                                    >
+                                      <p className="font-semibold text-foreground text-base">
+                                        {totem.nome?.toUpperCase() || "TOTEM SEM NOME"}
+                                      </p>
+                                      <p className="mt-1 text-[11px] text-muted uppercase tracking-[0.18em]">
+                                        ID {totem._id.slice(-8).toUpperCase()}
+                                      </p>
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        )}
+
+                        <div className="sr-only" aria-live="polite">
+                          Totem selecionado: {selectedTotem?.nome || "nenhum"}
+                        </div>
+
+                        <div className="hidden right-0 absolute inset-y-0 items-center pr-3 text-muted pointer-events-none">
                           <svg
                             className="w-5 h-5"
                             fill="none"
