@@ -366,7 +366,7 @@ const AddTotemModal = ({
       const payload = JSON.stringify({
         ssid: selectedWifi.ssid.trim(),
         password: wifiPassword.trim(),
-        interval: 1,
+        interval: intervalInt,
         totem_id: generatedTotemId.trim(),
         ip: normalizeTotemHost(
           process.env.NEXT_PUBLIC_API_URL_TOTEM || "http://192.168.3.211",
@@ -1418,9 +1418,9 @@ export default function Dashboard() {
           {viewMode === "charts" && (
             <div className="flex flex-col gap-6">
               <section className="gap-4 grid md:grid-cols-3">
-                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted text-sm">Totem ativo</span>
+                <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel hover:border-primary/50 transition-colors">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-muted text-xs uppercase font-medium tracking-[0.1em]">Totem ativo</span>
                     <button
                       onClick={() => setIsFilterModalOpen(true)}
                       className="bg-primary/10 hover:bg-primary/20 px-3 py-1 rounded-full font-semibold text-primary text-xs transition-colors cursor-pointer"
@@ -1430,15 +1430,13 @@ export default function Dashboard() {
                   </div>
                   <div className="relative mt-4">
                     {totems.length === 0 ? (
-                      <span className="font-semibold text-foreground text-2xl">
-                        -
-                      </span>
+                      <span className="font-bold text-foreground text-3xl">-</span>
                     ) : (
                       <>
                         <select
                           value={selectedTotemId}
                           onChange={(e) => setSelectedTotemId(e.target.value)}
-                          className="bg-background px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary w-full font-semibold text-foreground text-lg appearance-none"
+                          className="bg-background px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary w-full font-bold text-foreground text-lg appearance-none"
                         >
                           {totems.map((t) => (
                             <option key={t._id} value={t._id}>
@@ -1466,31 +1464,31 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
-                  <span className="text-muted text-sm">Temperatura média</span>
-                  <p className="mt-3 font-semibold text-foreground text-3xl">
+                <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel hover:border-primary/50 transition-colors">
+                  <span className="text-muted text-xs uppercase font-medium tracking-[0.1em]">Temperatura média</span>
+                  <p className="mt-4 font-bold text-foreground text-4xl">
                     {averageTemperature}
                   </p>
-                  <div className="bg-card-alt mt-4 rounded-full w-full h-2">
-                    <div className="bg-linear-to-r from-yellow-300 via-orange-400 to-red-500 rounded-full w-3/4 h-2" />
+                  <div className="bg-card-alt mt-4 rounded-full w-full h-2.5">
+                    <div className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 rounded-full w-3/4 h-2.5" />
                   </div>
                 </div>
 
-                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
-                  <span className="text-muted text-sm">Umidade média</span>
-                  <p className="mt-3 font-semibold text-foreground text-3xl">
+                <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel hover:border-primary/50 transition-colors">
+                  <span className="text-muted text-xs uppercase font-medium tracking-[0.1em]">Umidade média</span>
+                  <p className="mt-4 font-bold text-foreground text-4xl">
                     {averageHumidity}
                   </p>
-                  <div className="bg-card-alt mt-4 rounded-full w-full h-2">
-                    <div className="bg-linear-to-r from-cyan-200 via-cyan-400 to-sky-500 rounded-full w-2/3 h-2" />
+                  <div className="bg-card-alt mt-4 rounded-full w-full h-2.5">
+                    <div className="bg-gradient-to-r from-cyan-200 via-cyan-400 to-sky-500 rounded-full w-2/3 h-2.5" />
                   </div>
                 </div>
               </section>
 
               <section className="gap-6 grid md:grid-cols-2 lg:grid-cols-3">
-                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
-                  <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
-                    <BarChart2 size={16} className="text-primary" /> Temperatura
+                <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel">
+                  <div className="flex items-center gap-2 mb-6 font-semibold text-foreground text-lg">
+                    <BarChart2 size={18} className="text-primary" /> Temperatura
                     (ºC)
                   </div>
                   {temperatureChartData.length === 0 ? (
@@ -1498,15 +1496,15 @@ export default function Dashboard() {
                       Nenhum registro coletado pelo totem...
                     </div>
                   ) : (
-                    <div className="h-70">
+                        <div className="h-70">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                           data={temperatureChartData}
-                          margin={{ top: 10, right: 0, left: -30, bottom: 0 }}
+                          margin={{ top: 15, right: 15, left: -15, bottom: 5 }}
                         >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="timestamp" tick={{ fontSize: 12 }} />
-                          <YAxis />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                          <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} stroke="#94a3b8" />
+                          <YAxis stroke="#94a3b8" label={{ value: "°C", angle: -90, position: "insideLeft" }} />
                           <Tooltip
                             content={
                               <CustomTooltip
@@ -1518,14 +1516,15 @@ export default function Dashboard() {
                           <Line
                             type="monotone"
                             dataKey="value"
-                            stroke="#FACC15"
-                            strokeWidth={2}
-                            dot={{ r: 4 }}
+                            stroke="#F59E0B"
+                            strokeWidth={3}
+                            dot={{ r: 3, fill: "#F59E0B" }}
                             activeDot={{
                               r: 6,
                               style: { cursor: "pointer" },
                               onClick: () => setIsOpenImgModal(true),
                             }}
+                            isAnimationActive={true}
                           />
                         </LineChart>
                       </ResponsiveContainer>
@@ -1533,9 +1532,9 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
-                  <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
-                    <BarChart2 size={16} className="text-primary" /> Umidade (%)
+                <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel">
+                  <div className="flex items-center gap-2 mb-6 font-semibold text-foreground text-lg">
+                    <BarChart2 size={18} className="text-primary" /> Umidade (%)
                   </div>
                   {humidityChartData.length === 0 ? (
                     <div className="flex justify-center items-center h-70 text-muted text-sm">
@@ -1546,11 +1545,11 @@ export default function Dashboard() {
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                           data={humidityChartData}
-                          margin={{ top: 10, right: 0, left: -30, bottom: 0 }}
+                          margin={{ top: 15, right: 15, left: -15, bottom: 5 }}
                         >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="timestamp" tick={{ fontSize: 12 }} />
-                          <YAxis />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                          <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} stroke="#94a3b8" />
+                          <YAxis stroke="#94a3b8" label={{ value: "%", angle: -90, position: "insideLeft" }} />
                           <Tooltip
                             content={
                               <CustomTooltip
@@ -1562,14 +1561,15 @@ export default function Dashboard() {
                           <Line
                             type="monotone"
                             dataKey="value"
-                            stroke="#13cde6"
-                            strokeWidth={2}
-                            dot={{ r: 4 }}
+                            stroke="#06B6D4"
+                            strokeWidth={3}
+                            dot={{ r: 3, fill: "#06B6D4" }}
                             activeDot={{
                               r: 6,
                               style: { cursor: "pointer" },
                               onClick: () => setIsOpenImgModal(true),
                             }}
+                            isAnimationActive={true}
                           />
                         </LineChart>
                       </ResponsiveContainer>
@@ -1577,9 +1577,9 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
-                  <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
-                    <BarChart2 size={16} className="text-primary" />{" "}
+                <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel">
+                  <div className="flex items-center gap-2 mb-6 font-semibold text-foreground text-lg">
+                    <BarChart2 size={18} className="text-primary" />{" "}
                     Precipitação (mm)
                   </div>
                   {precipitacaoChartData.length === 0 ? (
@@ -1591,11 +1591,11 @@ export default function Dashboard() {
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                           data={precipitacaoChartData}
-                          margin={{ top: 10, right: 0, left: -30, bottom: 0 }}
+                          margin={{ top: 15, right: 15, left: -15, bottom: 5 }}
                         >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="timestamp" tick={{ fontSize: 12 }} />
-                          <YAxis />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                          <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} stroke="#94a3b8" />
+                          <YAxis stroke="#94a3b8" label={{ value: "mm", angle: -90, position: "insideLeft" }} />
                           <Tooltip
                             content={
                               <CustomTooltip
@@ -1607,14 +1607,15 @@ export default function Dashboard() {
                           <Line
                             type="monotone"
                             dataKey="value"
-                            stroke="#10b981"
-                            strokeWidth={2}
-                            dot={{ r: 4 }}
+                            stroke="#10B981"
+                            strokeWidth={3}
+                            dot={{ r: 3, fill: "#10B981" }}
                             activeDot={{
                               r: 6,
                               style: { cursor: "pointer" },
                               onClick: () => setIsOpenImgModal(true),
                             }}
+                            isAnimationActive={true}
                           />
                         </LineChart>
                       </ResponsiveContainer>
@@ -1777,11 +1778,12 @@ export default function Dashboard() {
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart
                             data={precipitacaoChartData}
-                            margin={{ top: 10, right: 0, left: -30, bottom: 0 }}
+                            margin={{ top: 15, right: 15, left: -15, bottom: 5 }}
                           >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="timestamp" tick={{ fontSize: 12 }} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                            <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} stroke="#94a3b8" />
                             <YAxis
+                              stroke="#94a3b8"
                               label={{
                                 value: "mm",
                                 angle: -90,
@@ -1799,10 +1801,11 @@ export default function Dashboard() {
                             <Line
                               type="monotone"
                               dataKey="value"
-                              stroke="#10b981"
-                              strokeWidth={2}
-                              dot={{ r: 4 }}
+                              stroke="#10B981"
+                              strokeWidth={3}
+                              dot={{ r: 3, fill: "#10B981" }}
                               activeDot={{ r: 6 }}
+                              isAnimationActive={true}
                             />
                           </LineChart>
                         </ResponsiveContainer>

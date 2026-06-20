@@ -75,7 +75,7 @@ export default function ReportsPanel({
         </div>
       ) : reportData ? (
         <>
-          <section className="gap-4 grid sm:grid-cols-2 2xl:grid-cols-6 xl:grid-cols-3">
+          <section className="gap-4 grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
             {[
               { label: "Totens", value: reportData.summary.totalTotens },
               { label: "Leituras", value: reportData.summary.totalReadings },
@@ -84,17 +84,17 @@ export default function ReportsPanel({
               { label: "Umid. média", value: `${reportData.summary.avgHumidity.toFixed(1)} %` },
               { label: "Anomalias", value: reportData.summary.anomalyCount },
             ].map((item) => (
-              <div key={item.label} className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
-                <p className="text-muted text-sm">{item.label}</p>
-                <p className="mt-3 font-semibold text-foreground text-3xl">{item.value}</p>
+              <div key={item.label} className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel hover:border-primary/50 transition-colors">
+                <p className="text-muted text-xs uppercase tracking-[0.2em] font-medium">{item.label}</p>
+                <p className="mt-4 font-bold text-foreground text-4xl">{item.value}</p>
               </div>
             ))}
           </section>
 
           <section className="gap-6 grid xl:grid-cols-2">
-            <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
-              <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
-                <BarChart2 size={16} className="text-primary" /> Evolução diária
+            <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel">
+              <div className="flex items-center gap-2 mb-6 font-semibold text-foreground text-lg">
+                <BarChart2 size={18} className="text-primary" /> Evolução diária
               </div>
               {reportData.dailySeries.length === 0 ? (
                 <div className="flex justify-center items-center h-70 text-muted text-sm">
@@ -105,73 +105,73 @@ export default function ReportsPanel({
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={reportData.dailySeries}
-                      margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
+                      margin={{ top: 15, right: 15, left: -15, bottom: 5 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-                      <YAxis />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#94a3b8" />
+                      <YAxis stroke="#94a3b8" />
                       <Tooltip />
-                      <Line type="monotone" dataKey="avgTemperature" stroke="#FACC15" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="avgHumidity" stroke="#13cde6" strokeWidth={2} dot={{ r: 4 }} />
+                      <Line type="monotone" dataKey="avgTemperature" stroke="#F59E0B" strokeWidth={3} dot={{ r: 3, fill: "#F59E0B" }} name="Temperatura" isAnimationActive={true} />
+                      <Line type="monotone" dataKey="avgHumidity" stroke="#06B6D4" strokeWidth={3} dot={{ r: 3, fill: "#06B6D4" }} name="Umidade" isAnimationActive={true} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               )}
             </div>
 
-            <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
-              <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
-                <Sparkles size={16} className="text-primary" /> Indicadores-chave
+            <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel">
+              <div className="flex items-center gap-2 mb-6 font-semibold text-foreground text-lg">
+                <Sparkles size={18} className="text-primary" /> Indicadores-chave
               </div>
-              <div className="gap-3 grid sm:grid-cols-2">
-                <div className="bg-card-alt p-4 rounded-2xl">
-                  <p className="text-muted text-xs uppercase">Temp. mínima</p>
-                  <p className="mt-2 font-semibold text-foreground text-2xl">{reportData.summary.minTemperature.toFixed(1)} °C</p>
+              <div className="gap-4 grid sm:grid-cols-2">
+                <div className="bg-card-alt/50 p-5 rounded-2xl border border-border/50">
+                  <p className="text-muted text-xs uppercase tracking-[0.2em] font-medium">Temp. mínima</p>
+                  <p className="mt-3 font-bold text-foreground text-3xl">{reportData.summary.minTemperature.toFixed(1)} °C</p>
                 </div>
-                <div className="bg-card-alt p-4 rounded-2xl">
-                  <p className="text-muted text-xs uppercase">Temp. máxima</p>
-                  <p className="mt-2 font-semibold text-foreground text-2xl">{reportData.summary.maxTemperature.toFixed(1)} °C</p>
+                <div className="bg-card-alt/50 p-5 rounded-2xl border border-border/50">
+                  <p className="text-muted text-xs uppercase tracking-[0.2em] font-medium">Temp. máxima</p>
+                  <p className="mt-3 font-bold text-foreground text-3xl">{reportData.summary.maxTemperature.toFixed(1)} °C</p>
                 </div>
-                <div className="bg-card-alt p-4 rounded-2xl">
-                  <p className="text-muted text-xs uppercase">Umid. mínima</p>
-                  <p className="mt-2 font-semibold text-foreground text-2xl">{reportData.summary.minHumidity.toFixed(1)} %</p>
+                <div className="bg-card-alt/50 p-5 rounded-2xl border border-border/50">
+                  <p className="text-muted text-xs uppercase tracking-[0.2em] font-medium">Umid. mínima</p>
+                  <p className="mt-3 font-bold text-foreground text-3xl">{reportData.summary.minHumidity.toFixed(1)} %</p>
                 </div>
-                <div className="bg-card-alt p-4 rounded-2xl">
-                  <p className="text-muted text-xs uppercase">Umid. máxima</p>
-                  <p className="mt-2 font-semibold text-foreground text-2xl">{reportData.summary.maxHumidity.toFixed(1)} %</p>
+                <div className="bg-card-alt/50 p-5 rounded-2xl border border-border/50">
+                  <p className="text-muted text-xs uppercase tracking-[0.2em] font-medium">Umid. máxima</p>
+                  <p className="mt-3 font-bold text-foreground text-3xl">{reportData.summary.maxHumidity.toFixed(1)} %</p>
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl overflow-hidden glow-panel">
-            <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
-              <MapIcon size={16} className="text-primary" /> Comparativo entre totens
+          <section className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl overflow-hidden glow-panel">
+            <div className="flex items-center gap-2 mb-6 font-semibold text-foreground text-lg">
+              <MapIcon size={18} className="text-primary" /> Comparativo entre totens
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
-                  <tr className="border-border border-b text-muted text-left uppercase">
-                    <th className="py-3 pr-4">Totem</th>
-                    <th className="py-3 pr-4">Leituras</th>
-                    <th className="py-3 pr-4">Temp. média</th>
-                    <th className="py-3 pr-4">Umid. média</th>
-                    <th className="py-3 pr-4">Anomalias</th>
+                  <tr className="border-border border-b text-muted text-left uppercase text-xs font-bold tracking-[0.1em]">
+                    <th className="py-4 pr-4 pl-0">Totem</th>
+                    <th className="py-4 pr-4">Leituras</th>
+                    <th className="py-4 pr-4">Temp. média</th>
+                    <th className="py-4 pr-4">Umid. média</th>
+                    <th className="py-4 pr-4">Anomalias</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reportData.totens.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-6 text-muted text-center">Sem dados</td>
+                      <td colSpan={5} className="py-8 text-muted text-center">Sem dados</td>
                     </tr>
                   ) : (
                     reportData.totens.map((item) => (
-                      <tr key={item.totem._id} className="border-border border-b last:border-b-0">
-                        <td className="py-3 pr-4 font-medium text-foreground">{item.totem.nome}</td>
-                        <td className="py-3 pr-4">{item.totalReadings}</td>
-                        <td className="py-3 pr-4">{item.avgTemperature.toFixed(1)} °C</td>
-                        <td className="py-3 pr-4">{item.avgHumidity.toFixed(1)} %</td>
-                        <td className="py-3 pr-4">{item.anomalyCount}</td>
+                      <tr key={item.totem._id} className="border-border border-b last:border-b-0 hover:bg-card-alt/50 transition-colors">
+                        <td className="py-4 pr-4 pl-0 font-semibold text-foreground">{item.totem.nome}</td>
+                        <td className="py-4 pr-4 text-foreground font-medium">{item.totalReadings}</td>
+                        <td className="py-4 pr-4 text-foreground font-medium">{item.avgTemperature.toFixed(1)} °C</td>
+                        <td className="py-4 pr-4 text-foreground font-medium">{item.avgHumidity.toFixed(1)} %</td>
+                        <td className="py-4 pr-4 text-foreground font-medium">{item.anomalyCount}</td>
                       </tr>
                     ))
                   )}
@@ -180,34 +180,34 @@ export default function ReportsPanel({
             </div>
           </section>
 
-          <section className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl overflow-hidden glow-panel">
-            <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
-              <AlertCircle size={16} className="text-primary" /> Anomalias
+          <section className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl overflow-hidden glow-panel">
+            <div className="flex items-center gap-2 mb-6 font-semibold text-foreground text-lg">
+              <AlertCircle size={18} className="text-primary" /> Anomalias detectadas
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
-                  <tr className="border-border border-b text-muted text-left uppercase">
-                    <th className="py-3 pr-4">Totem</th>
-                    <th className="py-3 pr-4">Temperatura</th>
-                    <th className="py-3 pr-4">Umidade</th>
-                    <th className="py-3 pr-4">Data</th>
-                    <th className="py-3 pr-4">Motivos</th>
+                  <tr className="border-border border-b text-muted text-left uppercase text-xs font-bold tracking-[0.1em]">
+                    <th className="py-4 pr-4 pl-0">Totem</th>
+                    <th className="py-4 pr-4">Temperatura</th>
+                    <th className="py-4 pr-4">Umidade</th>
+                    <th className="py-4 pr-4">Data</th>
+                    <th className="py-4 pr-4">Motivos</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reportData.anomalies.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-6 text-muted text-center">Nenhuma anomalia no período.</td>
+                      <td colSpan={5} className="py-8 text-muted text-center">Nenhuma anomalia no período.</td>
                     </tr>
                   ) : (
                     reportData.anomalies.slice(0, 10).map((item, index) => (
-                      <tr key={`${item.imagem}-${index}`} className="border-border border-b last:border-b-0">
-                        <td className="py-3 pr-4 font-medium text-foreground">{item.totem?.nome || "Totem removido"}</td>
-                        <td className="py-3 pr-4">{item.temperatura.toFixed(1)} °C</td>
-                        <td className="py-3 pr-4">{item.umidade.toFixed(1)} %</td>
-                        <td className="py-3 pr-4">{item.criado_em ? new Date(item.criado_em).toLocaleString("pt-BR") : "-"}</td>
-                        <td className="py-3 pr-4">{item.reasons.join(", ")}</td>
+                      <tr key={`${item.imagem}-${index}`} className="border-border border-b last:border-b-0 hover:bg-card-alt/50 transition-colors">
+                        <td className="py-4 pr-4 pl-0 font-semibold text-foreground">{item.totem?.nome || "Totem removido"}</td>
+                        <td className="py-4 pr-4 text-foreground font-medium">{item.temperatura.toFixed(1)} °C</td>
+                        <td className="py-4 pr-4 text-foreground font-medium">{item.umidade.toFixed(1)} %</td>
+                        <td className="py-4 pr-4 text-muted text-xs">{item.criado_em ? new Date(item.criado_em).toLocaleString("pt-BR") : "-"}</td>
+                        <td className="py-4 pr-4 text-muted text-xs">{item.reasons.join(", ")}</td>
                       </tr>
                     ))
                   )}
