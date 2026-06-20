@@ -1,6 +1,8 @@
+/// <reference path="../types/swagger-jsdoc.d.ts" />
+
 import swaggerJsdoc from "swagger-jsdoc";
 
-const options: swaggerJsdoc.Options = {
+const options = {
   definition: {
     openapi: "3.0.0",
     info: {

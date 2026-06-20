@@ -37,7 +37,7 @@ export const login = async (req: Request, res: Response) => {
     const token = jwt.sign(
       { userId: user._id },
       jwtConfig.secret,
-      { expiresIn: typeof jwtConfig.expiresIn === "string" ? jwtConfig.expiresIn : String(jwtConfig.expiresIn) }
+      { expiresIn: jwtConfig.expiresIn }
     );
 
     res.status(200).json({

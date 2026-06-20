@@ -85,6 +85,23 @@ type SerializedAnalysis = {
   analise_finalizada_em: Date | null;
 };
 
+type UserScopeError = {
+  error: true;
+  status: number;
+  message: string;
+  totens: [];
+};
+
+type UserScopeSuccess = {
+  error: false;
+  status: number;
+  message: string;
+  usuario: typeof Usuario.prototype;
+  totens: (typeof Totem.prototype)[];
+};
+
+type UserScope = UserScopeError | UserScopeSuccess;
+
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
 const formatDateKey = (date: Date) => {
@@ -197,7 +214,7 @@ const getReasons = (reading: ReadingWithDate) => {
   return reasons;
 };
 
-const getUserScope = async (userId: string) => {
+const getUserScope = async (userId: string): Promise<UserScope> => {
   const usuario = await Usuario.findById(userId);
 
   if (!usuario) {
