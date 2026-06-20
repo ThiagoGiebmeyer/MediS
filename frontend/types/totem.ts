@@ -1,9 +1,9 @@
-
 export interface NewTotemDTO {
   nome: string;
   latitude: string;
   longitude: string;
   intervalo_coleta: number;
+  _id?: string;
 }
 
 export interface Totem {
@@ -12,6 +12,9 @@ export interface Totem {
   latitude: string;
   longitude: string;
   intervalo_coleta: number;
-  createdAt: string;
-  updatedAt: string;
+  usuario_id?: string;
+  criado_em?: string;
+  alterado_em?: string;
 }
+
+export type TotemList = Totem[];

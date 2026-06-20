@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { createTotem, getConfig } from "../controllers/totens-controller";
+import {
+	createTotem,
+	deleteTotem,
+	getTotens,
+	getTotemById,
+	updateTotem,
+} from "../controllers/totens-controller";
 import { authenticateToken } from "../middlewares/auth-middleware";
 
 const router = Router();
@@ -68,7 +74,11 @@ router.use(authenticateToken);
  *       500:
  *         description: Inconsistência interna no servidor
  */
+router.get("/", getTotens);
 router.post("/", createTotem);
-router.get("/config", getConfig);
+router.get("/config/:totemId", getTotemById);
+router.get("/:totemId", getTotemById);
+router.patch("/:totemId", updateTotem);
+router.delete("/:totemId", deleteTotem);
 
 export default router;

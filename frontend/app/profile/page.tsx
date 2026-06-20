@@ -45,28 +45,32 @@ export default function Profile() {
       <div className="z-10 relative flex flex-col gap-6 mx-auto px-4 sm:px-6 py-6 sm:py-10 max-w-5xl min-h-screen">
         <header className="flex sm:flex-row flex-col sm:justify-between items-start sm:items-center gap-4 bg-card/80 shadow-lg p-4 sm:p-6 border border-border rounded-3xl glow-panel">
           <div>
-            <p className="text-muted text-xs uppercase tracking-[0.3em]">Perfil</p>
-            <h1 className="mt-2 font-semibold text-foreground text-2xl sm:text-3xl">Sua conta MediS</h1>
-            <p className="mt-2 text-muted text-sm">Gerencie preferências de tema e visualize dados básicos da sessão.</p>
+            <p className="text-muted text-xs uppercase tracking-[0.3em]">
+              Perfil
+            </p>
+            <h1 className="mt-2 font-semibold text-foreground text-2xl sm:text-3xl">
+              Sua conta MediS
+            </h1>
+            <p className="mt-2 text-muted text-sm">
+              Gerencie preferências de tema e visualize dados básicos da sessão.
+            </p>
           </div>
-          <Link
-            href="/dashboard"
-            className="px-4 py-2 border border-border hover:border-primary rounded-full w-full sm:w-auto font-semibold text-foreground hover:text-primary text-sm text-center transition-colors"
-          >
-            Voltar ao dashboard
-          </Link>
         </header>
 
         <section className="gap-4 sm:gap-6 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="bg-card/80 shadow-lg p-4 sm:p-6 border border-border rounded-3xl glow-panel">
-            <h2 className="font-semibold text-foreground text-lg">Dados do usuário</h2>
+            <h2 className="font-semibold text-foreground text-lg">
+              Dados do usuário
+            </h2>
             {isLoading ? (
               <div className="mt-4 text-muted text-sm">Carregando dados...</div>
             ) : (
               <div className="gap-3 grid mt-4 text-muted text-sm">
                 <div className="flex sm:flex-row flex-col sm:justify-between items-start sm:items-center gap-1 bg-card/70 px-4 py-3 border border-border rounded-2xl">
                   <span>ID do usuário</span>
-                  <span className="font-semibold text-foreground sm:text-right break-all">{profile?.id || "-"}</span>
+                  <span className="font-semibold text-foreground sm:text-right break-all">
+                    {profile?.id || "-"}
+                  </span>
                 </div>
                 <div className="flex sm:flex-row flex-col sm:justify-between items-start sm:items-center gap-1 bg-card/70 px-4 py-3 border border-border rounded-2xl">
                   <span>Nome completo</span>
@@ -76,18 +80,24 @@ export default function Profile() {
                 </div>
                 <div className="flex sm:flex-row flex-col sm:justify-between items-start sm:items-center gap-1 bg-card/70 px-4 py-3 border border-border rounded-2xl">
                   <span>E-mail</span>
-                  <span className="font-semibold text-foreground sm:text-right break-all">{profile?.email || "-"}</span>
+                  <span className="font-semibold text-foreground sm:text-right break-all">
+                    {profile?.email || "-"}
+                  </span>
                 </div>
                 <div className="flex sm:flex-row flex-col sm:justify-between items-start sm:items-center gap-1 bg-card/70 px-4 py-3 border border-border rounded-2xl">
                   <span>Criado em</span>
                   <span className="font-semibold text-foreground sm:text-right">
-                    {profile?.criado_em ? new Date(profile.criado_em).toLocaleString("pt-BR") : "-"}
+                    {profile?.criado_em
+                      ? new Date(profile.criado_em).toLocaleString("pt-BR")
+                      : "-"}
                   </span>
                 </div>
                 <div className="flex sm:flex-row flex-col sm:justify-between items-start sm:items-center gap-1 bg-card/70 px-4 py-3 border border-border rounded-2xl">
                   <span>Atualizado em</span>
                   <span className="font-semibold text-foreground sm:text-right">
-                    {profile?.alterado_em ? new Date(profile.alterado_em).toLocaleString("pt-BR") : "-"}
+                    {profile?.alterado_em
+                      ? new Date(profile.alterado_em).toLocaleString("pt-BR")
+                      : "-"}
                   </span>
                 </div>
               </div>
@@ -95,8 +105,12 @@ export default function Profile() {
           </div>
 
           <div className="bg-card/80 shadow-lg p-4 sm:p-6 border border-border rounded-3xl glow-panel">
-            <h2 className="font-semibold text-foreground text-lg">Tema e cor principal</h2>
-            <p className="mt-2 text-muted text-sm">Escolha o modo claro/escuro e a cor que personaliza o painel.</p>
+            <h2 className="font-semibold text-foreground text-lg">
+              Tema e cor principal
+            </h2>
+            <p className="mt-2 text-muted text-sm">
+              Escolha o modo claro/escuro e a cor que personaliza o painel.
+            </p>
             <div className="mt-4">
               <ThemeControls variant="inline" alwaysOpen />
             </div>

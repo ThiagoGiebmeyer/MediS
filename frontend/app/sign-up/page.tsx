@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { register } from "@/services/index";
@@ -33,8 +34,8 @@ export default function Register() {
     try {
       const response = await register(email, password, nome, sobrenome);
 
-      if (response.data.error) {
-        toast.error(response.data.messageError || "Inconsistência ao cadastrar.");
+      if (response.error || response.data?.error) {
+        toast.error(response.messageError || response.data?.messageError || "Inconsistência ao cadastrar.");
         return;
       }
 
@@ -75,18 +76,21 @@ export default function Register() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
+      <div className="absolute inset-0 bg-[linear-gradient(155deg,rgba(8,47,73,0.35),rgba(7,89,133,0.2),rgba(20,83,45,0.35),rgba(2,6,23,0.92))]" />
+      <div className="absolute inset-0 opacity-45 [background-image:linear-gradient(rgba(148,163,184,0.12)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.12)_1px,transparent_1px)] [background-size:44px_44px]" />
       <div className="absolute inset-0">
-        <div className="-top-40 -right-24 float-slow absolute bg-primary/20 blur-3xl rounded-full w-96 h-96" />
-        <div className="bottom-0 -left-32 float-slow absolute bg-emerald-400/10 blur-3xl rounded-full w-80 h-80" />
+        <div className="-top-40 -right-20 float-slow absolute bg-cyan-400/25 blur-3xl rounded-full w-96 h-96" />
+        <div className="-bottom-12 -left-32 float-slow absolute bg-emerald-400/20 blur-3xl rounded-full w-80 h-80" />
       </div>
 
       <div className="z-10 relative flex items-center mx-auto px-6 py-10 max-w-6xl min-h-screen">
-        <div className="gap-10 grid lg:grid-cols-[0.95fr_1.05fr] w-full">
+        <div className="gap-8 grid lg:grid-cols-[0.98fr_1.02fr] w-full">
           <main className="fade-up">
-            <div className="bg-card/80 shadow-2xl p-8 sm:p-10 border border-border rounded-3xl glow-panel">
-              <div className="mb-8">
-                <p className="font-semibold text-muted text-xs uppercase tracking-[0.35em]">Cadastro</p>
-                <h2 className="mt-3 font-semibold text-foreground text-2xl">Crie sua conta MediS</h2>
+            <div className="bg-card/85 shadow-2xl backdrop-blur-md p-8 sm:p-10 border border-border rounded-3xl glow-panel">
+              <div className="mb-7">
+                <p className="font-semibold text-muted text-xs uppercase tracking-[0.35em]">Primeiro acesso</p>
+                <h2 className="mt-3 font-semibold text-foreground text-3xl">Criar conta MediS</h2>
+                <p className="mt-2 text-muted text-sm">Ative seu ambiente de monitoramento em poucos passos.</p>
               </div>
 
               <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
@@ -152,34 +156,45 @@ export default function Register() {
 
                 <button
                   type="submit"
-                  className="bg-primary hover:bg-primary-dark mt-2 px-4 py-2 rounded-lg font-semibold text-on-primary transition-colors cursor-pointer"
+                  className="bg-primary hover:bg-primary-dark mt-2 px-4 py-3 rounded-xl font-semibold text-on-primary transition-colors cursor-pointer"
                 >
                   Criar conta
                 </button>
               </form>
 
               <div className="mt-6 text-muted text-sm">
-                Ja tem conta? <a href="/login" className="text-primary hover:underline">Entrar</a>
+                Já tem conta? <Link href="/login" className="font-semibold text-primary hover:underline">Entrar</Link>
               </div>
             </div>
           </main>
 
           <aside className="flex flex-col justify-center gap-6 fade-up" style={{ animationDelay: "0.1s" }}>
             <div className="flex items-center gap-3">
-              <div className="flex justify-center items-center bg-primary rounded-2xl w-10 h-10 font-bold text-on-primary">M</div>
+              <div className="flex justify-center items-center bg-primary/90 shadow-lg shadow-primary/30 rounded-2xl w-11 h-11 font-black text-on-primary text-lg">M</div>
               <div>
                 <p className="text-muted text-sm uppercase tracking-[0.3em]">MediS</p>
-                <p className="text-muted text-xs">Primeiro acesso</p>
+                <p className="text-muted text-xs">Onboarding do produtor</p>
               </div>
             </div>
-            <h2 className="font-semibold text-foreground text-3xl sm:text-4xl">Configure seu ambiente em poucos minutos</h2>
-            <p className="text-muted text-sm sm:text-base">
-              Cadastre-se para habilitar dashboards, cadastro de totens e relatorios inteligentes.
+            <span className="bg-card/70 px-4 py-2 border border-border rounded-full w-fit font-semibold text-muted text-[11px] uppercase tracking-[0.35em]">
+              Setup guiado
+            </span>
+            <h2 className="font-semibold text-foreground text-3xl sm:text-4xl leading-tight">
+              Estruture seu monitoramento com identidade e contexto.
+            </h2>
+            <p className="max-w-xl text-muted text-sm sm:text-base">
+              Após o cadastro você já entra pronto para configurar totems, mapear áreas e acompanhar leituras com rastreabilidade.
             </p>
-            <div className="gap-3 grid">
-              {["Onboarding rápido", "Controle de usuários", "Visão geográfica", "Indicadores-chave"].map((item) => (
-                <div key={item} className="bg-card/70 px-4 py-3 border border-border rounded-2xl font-semibold text-foreground text-sm">
-                  {item}
+            <div className="gap-3 grid sm:grid-cols-2">
+              {[
+                { title: "Conta base", description: "Dados de acesso e identidade" },
+                { title: "Mapa inicial", description: "Latitude e longitude dos pontos" },
+                { title: "Operação", description: "Cadastros de totem e intervalos" },
+                { title: "Inteligência", description: "Análises e tendências em minutos" },
+              ].map((item) => (
+                <div key={item.title} className="bg-card/80 backdrop-blur-sm px-4 py-3 border border-border/80 rounded-2xl">
+                  <p className="font-semibold text-foreground text-sm">{item.title}</p>
+                  <p className="mt-1 text-muted text-xs">{item.description}</p>
                 </div>
               ))}
             </div>

@@ -1,10 +1,30 @@
 import axios from "axios";
 
-const ip= process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1";
-const port = process.env.NEXT_PUBLIC_API_PORT || 3001;
+const defaultHost = "http://127.0.0.1";
+const defaultPort = "3001";
+
+const buildBaseUrl = () => {
+  const rawHost = (process.env.NEXT_PUBLIC_API_URL || defaultHost).trim();
+  const rawPort = (process.env.NEXT_PUBLIC_API_PORT || defaultPort).toString().trim();
+
+  const hasProtocol = /^https?:\/\//i.test(rawHost);
+  const hostWithProtocol = hasProtocol ? rawHost : `http://${rawHost}`;
+
+  try {
+    const url = new URL(hostWithProtocol);
+
+    if (!url.port) {
+      url.port = rawPort;
+    }
+
+    return `${url.origin}/api/`;
+  } catch {
+    return `${defaultHost}:${defaultPort}/api/`;
+  }
+};
 
 const api = axios.create({
-  baseURL: `${ip}:${port}/api/`,
+  baseURL: buildBaseUrl(),
 });
 
 api.interceptors.request.use(

@@ -279,7 +279,7 @@ class MyCallbacks : public BLECharacteristicCallbacks {
 };
 
 void setupBLE() {
-  BLEDevice::init("MediS-TC");
+  BLEDevice::init("MediS-Totem");
   BLEServer *pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
   BLEService *pService = pServer->createService(SERVICE_UUID);

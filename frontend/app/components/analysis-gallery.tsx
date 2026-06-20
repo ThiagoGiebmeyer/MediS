@@ -26,6 +26,19 @@ const getStatusLabel = (status: AnalysisItem["analise_status"]) => {
   }
 };
 
+const getTotemDisplayName = (analysis: AnalysisItem) => {
+  if (analysis.totem?.nome?.trim()) return analysis.totem.nome.trim();
+  return analysis.origem_analise === "manual"
+    ? "Análise manual"
+    : "Totem não identificado";
+};
+
+const formatTotemId = (id?: string) => {
+  if (!id) return "-";
+  if (id.length <= 10) return id;
+  return `${id.slice(0, 6)}...${id.slice(-4)}`;
+};
+
 type AnalysisGalleryProps = {
   analyses: AnalysisItem[];
   pagination: AnalysisPagination | null;
@@ -39,7 +52,9 @@ export default function AnalysisGallery({
   isLoading,
   onPageChange,
 }: AnalysisGalleryProps) {
-  const [selectedAnalysis, setSelectedAnalysis] = useState<AnalysisItem | null>(null);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<AnalysisItem | null>(
+    null,
+  );
 
   const canGoPrevious = Boolean(pagination?.hasPrevious);
   const canGoNext = Boolean(pagination?.hasNext);
@@ -62,7 +77,9 @@ export default function AnalysisGallery({
           <div className="flex flex-wrap items-center gap-3 text-muted text-xs">
             <button
               type="button"
-              onClick={() => onPageChange(Math.max(1, (pagination?.page || 1) - 1))}
+              onClick={() =>
+                onPageChange(Math.max(1, (pagination?.page || 1) - 1))
+              }
               disabled={!canGoPrevious || isLoading}
               className="inline-flex items-center gap-1 disabled:opacity-50 px-4 py-2 border border-border hover:border-primary rounded-full font-semibold text-foreground hover:text-primary transition-colors disabled:cursor-not-allowed"
             >
@@ -108,11 +125,18 @@ export default function AnalysisGallery({
                           {analysis.cultura}
                         </span>
                         <span className="bg-background px-3 py-1 rounded-full">
-                          {analysis.origem_analise === "manual" ? "Manual" : "Totem"}
+                          {analysis.origem_analise === "manual"
+                            ? "Manual"
+                            : "Totem"}
                         </span>
-                        <span className="bg-background px-3 py-1 rounded-full">
-                          {analysis.totem?.nome || "Sem totem"}
-                        </span>
+                      </div>
+                      <div className="bg-primary/10 mt-4 px-4 py-3 border border-primary/30 rounded-2xl">
+                        <p className="font-semibold text-[10px] text-primary uppercase tracking-[0.2em]">
+                          Totem da coleta
+                        </p>
+                        <p className="mt-1 font-semibold text-foreground text-sm leading-tight">
+                          {getTotemDisplayName(analysis)}
+                        </p>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-4 text-xs">
                         <span className="bg-primary/10 px-3 py-1 rounded-full font-medium text-primary">
@@ -133,8 +157,11 @@ export default function AnalysisGallery({
                   </p>
 
                   <p className="text-muted text-xs line-clamp-2 leading-relaxed">
-                    <span className="font-semibold text-foreground">Justificativa da confiança:</span>{" "}
-                    {analysis.justificativa_confianca || "Sem justificativa disponível."}
+                    <span className="font-semibold text-foreground">
+                      Justificativa da confiança:
+                    </span>{" "}
+                    {analysis.justificativa_confianca ||
+                      "Sem justificativa disponível."}
                   </p>
 
                   {analysis.sinais_observados.length > 0 && (
@@ -216,7 +243,9 @@ export default function AnalysisGallery({
                       {selectedAnalysis.cultura}
                     </span>
                     <span className="bg-background px-3 py-2 border border-border rounded-full font-medium text-foreground text-xs">
-                      {selectedAnalysis.origem_analise === "manual" ? "Manual" : "Totem"}
+                      {selectedAnalysis.origem_analise === "manual"
+                        ? "Manual"
+                        : "Totem"}
                     </span>
                     <span className="bg-background px-3 py-2 border border-border rounded-full font-medium text-foreground text-xs">
                       {selectedAnalysis.analise_status}
@@ -244,22 +273,33 @@ export default function AnalysisGallery({
                   </p>
                   <div className="space-y-3 text-muted text-sm">
                     <p>
-                      <span className="block mb-1 font-semibold text-foreground">Totem:</span>
+                      <span className="block mb-1 font-semibold text-foreground">
+                        Totem:
+                      </span>
                       {selectedAnalysis.totem?.nome || "Sem totem"}
                     </p>
                     <p>
-                      <span className="block mb-1 font-semibold text-foreground">Data:</span>
+                      <span className="block mb-1 font-semibold text-foreground">
+                        Data:
+                      </span>
                       {selectedAnalysis.criado_em
-                        ? new Date(selectedAnalysis.criado_em).toLocaleString("pt-BR")
+                        ? new Date(selectedAnalysis.criado_em).toLocaleString(
+                            "pt-BR",
+                          )
                         : "Data indisponível"}
                     </p>
                     <p>
-                      <span className="block mb-1 font-semibold text-foreground">Resumo:</span>
+                      <span className="block mb-1 font-semibold text-foreground">
+                        Resumo:
+                      </span>
                       {selectedAnalysis.resumo || "Sem resumo disponível."}
                     </p>
                     <p>
-                      <span className="block mb-1 font-semibold text-foreground">Justificativa da confiança:</span>
-                      {selectedAnalysis.justificativa_confianca || "Sem justificativa disponível."}
+                      <span className="block mb-1 font-semibold text-foreground">
+                        Justificativa da confiança:
+                      </span>
+                      {selectedAnalysis.justificativa_confianca ||
+                        "Sem justificativa disponível."}
                     </p>
                   </div>
                 </div>

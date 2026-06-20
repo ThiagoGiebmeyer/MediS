@@ -83,29 +83,65 @@ export default function ThemeControls({ variant = "floating", alwaysOpen = false
           T
         </button>
       )}
-      {shouldShowPanel && (
+
+      {(alwaysOpen || shouldShowPanel) && (
         <div
           id="theme-popover"
-          className="bg-card/95 shadow-lg backdrop-blur mt-3 p-3 border border-border rounded-2xl w-[min(16rem,calc(100vw-1.5rem))]"
+          className={[
+            "bg-card/90 backdrop-blur p-3 border border-border rounded-2xl shadow-lg",
+            variant === "floating" ? "mt-2 w-64" : "w-full",
+          ].join(" ")}
         >
-          <button
-            type="button"
-            onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
-            className="flex justify-between items-center gap-3 bg-background hover:bg-card-alt px-3 py-2 border border-border rounded-xl w-full font-semibold text-foreground text-sm transition-colors"
-          >
-            <span>Tema</span>
-            <span className="text-primary">{theme === "dark" ? "Escuro" : "Claro"}</span>
-          </button>
-          <div className="flex items-center gap-2 mt-3">
+          <p className="font-semibold text-foreground text-xs uppercase tracking-[0.2em]">
+            Aparencia
+          </p>
+
+          <div className="gap-2 grid grid-cols-2 mt-3">
+            <button
+              type="button"
+              onClick={() => setTheme("light")}
+              className={[
+                "px-3 py-2 rounded-xl border text-sm font-semibold transition-colors",
+                theme === "light"
+                  ? "border-primary text-primary bg-primary/10"
+                  : "border-border text-foreground hover:border-primary",
+              ].join(" ")}
+            >
+              Claro
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme("dark")}
+              className={[
+                "px-3 py-2 rounded-xl border text-sm font-semibold transition-colors",
+                theme === "dark"
+                  ? "border-primary text-primary bg-primary/10"
+                  : "border-border text-foreground hover:border-primary",
+              ].join(" ")}
+            >
+              Escuro
+            </button>
+          </div>
+
+          <p className="mt-4 font-semibold text-muted text-xs uppercase tracking-[0.2em]">
+            Cor principal
+          </p>
+
+          <div className="gap-2 grid grid-cols-5 mt-2">
             {COLOR_PRESETS.map((preset) => (
               <button
                 key={preset.id}
                 type="button"
-                title={`Cor ${preset.name}`}
                 onClick={() => setPrimaryId(preset.id)}
-                className={`h-7 w-7 rounded-full border ${primaryId === preset.id ? "border-foreground" : "border-border"}`}
-                style={{ backgroundColor: preset.primary }}
+                title={preset.name}
                 aria-label={`Selecionar cor ${preset.name}`}
+                className={[
+                  "rounded-full h-8 w-8 border-2 transition-transform",
+                  primaryId === preset.id
+                    ? "border-foreground scale-110"
+                    : "border-transparent hover:scale-105",
+                ].join(" ")}
+                style={{ backgroundColor: preset.primary }}
               />
             ))}
           </div>

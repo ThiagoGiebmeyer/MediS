@@ -8,8 +8,8 @@ import analiseRoutes from "./analise-routes";
 const router = Router();
 
 router.use("/user", userRoutes);
-router.use("/totem", totemRoutes);
 router.use("/totem/reading", totemReadingRoutes);
+router.use("/totem", totemRoutes);
 router.use("/analise", analiseRoutes);
 
 export default router;

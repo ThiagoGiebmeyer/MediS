@@ -24,14 +24,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import {
   CartesianGrid,
-  ComposedChart,
   Line,
   LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
-  Legend,
 } from "recharts";
 
 import {
@@ -427,7 +425,7 @@ const AddTotemModal = ({
 
             {connectedDevice ? (
               <p className="flex items-center gap-1 mb-4 text-yellow-600 text-xs">
-                <AlertCircle size={12} /> Isso pode levar até 15 segundos.
+                <AlertCircle size={12} /> Isso pode levar alguns segundos.
               </p>
             ) : (
               <p className="mb-6 text-muted text-sm">
@@ -574,7 +572,7 @@ const AddTotemModal = ({
               Aguarde a confirmação...
             </p>
             <p className="flex items-center gap-1 mt-4 text-yellow-600 text-xs">
-              <AlertCircle size={12} /> Isso pode levar até 15 segundos.
+              <AlertCircle size={12} /> Isso pode levar alguns segundos.
             </p>
           </div>
         )}
@@ -839,11 +837,18 @@ export default function Dashboard() {
     return (total / selectedMeasurements.length).toFixed(1) + "%";
   }, [selectedMeasurements]);
 
-  const temperatureAndHumidityChartData = useMemo(() => {
+  const temperatureChartData = useMemo(() => {
     return selectedMeasurements.map((c) => ({
+      value: c.temperatura,
       timestamp: new Date(c.criado_em).toLocaleString(),
-      temperatura: c.temperatura,
-      umidade: c.umidade,
+      image: c.imagem,
+    }));
+  }, [selectedMeasurements]);
+
+  const humidityChartData = useMemo(() => {
+    return selectedMeasurements.map((c) => ({
+      value: c.umidade,
+      timestamp: new Date(c.criado_em).toLocaleString(),
       image: c.imagem,
     }));
   }, [selectedMeasurements]);
@@ -1237,7 +1242,7 @@ export default function Dashboard() {
       <ViewImageModal
         isOpen={isOpenImgModal}
         onClose={() => setIsOpenImgModal(false)}
-        data={temperatureAndHumidityChartData}
+        data={temperatureChartData}
       />
 
       <AnaliseImagemModal
@@ -1321,7 +1326,7 @@ export default function Dashboard() {
         </div>
       )}
       <div className="bg-background min-h-screen text-foreground">
-        <div className="flex flex-col mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl min-h-screen">
+        <div className="flex flex-col px-4 sm:px-6 lg:px-8 py-6 w-full min-h-screen">
           <header className="flex flex-col gap-4 bg-card/80 shadow-lg mb-6 p-4 sm:p-6 border border-border rounded-3xl glow-panel">
             <div className="flex flex-wrap justify-between items-center gap-4">
               <div className="flex items-center gap-3">
@@ -1332,90 +1337,37 @@ export default function Dashboard() {
                   <p className="text-muted text-xs uppercase tracking-[0.3em]">
                     Centro de controle
                   </p>
-                  <h1 className="font-semibold text-foreground text-2xl">
-                    MediS Dashboard
-                  </h1>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                <Link
-                  href="/profile"
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-border hover:border-primary rounded-full font-semibold text-foreground hover:text-primary text-sm transition-colors cursor-pointer"
-                >
-                  Perfil
-                </Link>
                 {viewMode === "charts" && (
-                  <button
-                    onClick={() => setIsAddTotemModalOpen(true)}
-                    className="inline-flex items-center gap-2 bg-primary/10 hover:bg-primary px-4 py-2 border border-primary rounded-full font-semibold text-primary hover:text-on-primary text-sm transition-colors cursor-pointer"
-                  >
-                    <Plus size={16} /> Novo totem
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setIsAnaliseImagemOpen(true)}
+                      className="inline-flex items-center gap-2 bg-linear-to-r from-purple-600 hover:from-purple-700 to-pink-600 hover:to-pink-700 px-4 py-2 rounded-full font-semibold text-on-primary text-sm transition-colors cursor-pointer"
+                      title="Análise com IA"
+                    >
+                      <Sparkles size={16} /> MediS IA
+                    </button>
+                    <button
+                      onClick={handleRefreshAllData}
+                      className="inline-flex items-center gap-2 px-4 py-2 border border-border hover:border-primary rounded-full font-semibold text-foreground hover:text-primary text-sm transition-colors cursor-pointer"
+                      title="Atualizar dados"
+                    >
+                      <RefreshCcw size={16} /> Atualizar
+                    </button>
+                  </>
                 )}
-                {viewMode === "charts" && (
-                  <button
-                    onClick={handleRefreshAllData}
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-border hover:border-primary rounded-full font-semibold text-foreground hover:text-primary text-sm transition-colors cursor-pointer"
-                    title="Atualizar dados"
-                  >
-                    <RefreshCcw size={16} /> Atualizar
-                  </button>
-                )}
-                {viewMode === "charts" && (
-                  <button
-                    onClick={() => setIsAnaliseImagemOpen(true)}
-                    className="inline-flex items-center gap-2 bg-linear-to-r from-purple-600 hover:from-purple-700 to-pink-600 hover:to-pink-700 px-4 py-2 rounded-full font-semibold text-on-primary text-sm transition-colors cursor-pointer"
-                    title="Análise com IA"
-                  >
-                    <Sparkles size={16} /> MediS IA
-                  </button>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="inline-flex items-center gap-2 px-4 py-2 border border-border hover:border-red-400 rounded-full font-semibold text-foreground hover:text-red-500 text-sm transition-colors cursor-pointer"
-                >
-                  Sair
-                </button>
               </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {[
-                { key: "charts", label: "Dashboard", icon: BarChart2 },
-                { key: "map", label: "Mapa", icon: MapIcon },
-                { key: "reports", label: "Relatórios", icon: Paperclip },
-              ].map((item) => {
-                const Icon = item.icon;
-                const isActive = viewMode === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    onClick={() => {
-                      if (item.key === "map" && totems.length === 0) {
-                        toast.error("Nenhum totem cadastrado.");
-                        return;
-                      }
-                      setViewMode(item.key as typeof viewMode);
-                    }}
-                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
-                      isActive
-                        ? "bg-primary text-on-primary"
-                        : "border border-border text-foreground hover:border-primary hover:text-primary"
-                    }`}
-                  >
-                    <Icon size={16} /> {item.label}
-                  </button>
-                );
-              })}
             </div>
           </header>
 
           {viewMode === "charts" && (
             <div className="flex flex-col gap-6">
               <section className="gap-4 grid md:grid-cols-3">
-                <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel hover:border-primary/50 transition-colors">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-muted text-xs uppercase font-medium tracking-[0.1em]">Totem ativo</span>
+                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted text-sm">Totem ativo</span>
                     <button
                       onClick={() => setIsFilterModalOpen(true)}
                       className="bg-primary/10 hover:bg-primary/20 px-3 py-1 rounded-full font-semibold text-primary text-xs transition-colors cursor-pointer"
@@ -1425,13 +1377,15 @@ export default function Dashboard() {
                   </div>
                   <div className="relative mt-4">
                     {totems.length === 0 ? (
-                      <span className="font-bold text-foreground text-3xl">-</span>
+                      <span className="font-semibold text-foreground text-2xl">
+                        -
+                      </span>
                     ) : (
                       <>
                         <select
                           value={selectedTotemId}
                           onChange={(e) => setSelectedTotemId(e.target.value)}
-                          className="bg-background px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary w-full font-bold text-foreground text-lg appearance-none"
+                          className="bg-background px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary w-full font-semibold text-foreground text-lg appearance-none"
                         >
                           {totems.map((t) => (
                             <option key={t._id} value={t._id}>
@@ -1459,97 +1413,120 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel hover:border-primary/50 transition-colors">
-                  <span className="text-muted text-xs uppercase font-medium tracking-[0.1em]">Temperatura média</span>
-                  <p className="mt-4 font-bold text-foreground text-4xl">
+                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
+                  <span className="text-muted text-sm">Temperatura média</span>
+                  <p className="mt-3 font-semibold text-foreground text-3xl">
                     {averageTemperature}
                   </p>
-                  <div className="bg-card-alt mt-4 rounded-full w-full h-2.5">
-                    <div className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 rounded-full w-3/4 h-2.5" />
+                  <div className="bg-card-alt mt-4 rounded-full w-full h-2">
+                    <div className="bg-linear-to-r from-yellow-300 via-orange-400 to-red-500 rounded-full w-3/4 h-2" />
                   </div>
                 </div>
 
-                <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel hover:border-primary/50 transition-colors">
-                  <span className="text-muted text-xs uppercase font-medium tracking-[0.1em]">Umidade média</span>
-                  <p className="mt-4 font-bold text-foreground text-4xl">
+                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
+                  <span className="text-muted text-sm">Umidade média</span>
+                  <p className="mt-3 font-semibold text-foreground text-3xl">
                     {averageHumidity}
                   </p>
-                  <div className="bg-card-alt mt-4 rounded-full w-full h-2.5">
-                    <div className="bg-gradient-to-r from-cyan-200 via-cyan-400 to-sky-500 rounded-full w-2/3 h-2.5" />
+                  <div className="bg-card-alt mt-4 rounded-full w-full h-2">
+                    <div className="bg-linear-to-r from-cyan-200 via-cyan-400 to-sky-500 rounded-full w-2/3 h-2" />
                   </div>
                 </div>
               </section>
 
-              <section className="gap-6 grid md:grid-cols-2 lg:grid-cols-2">
-                <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel">
-                  <div className="flex items-center gap-2 mb-6 font-semibold text-foreground text-lg">
-                    <BarChart2 size={18} className="text-primary" /> Temperatura e Umidade
+              <section className="gap-6 grid md:grid-cols-2 lg:grid-cols-3">
+                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
+                  <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
+                    <BarChart2 size={16} className="text-primary" /> Temperatura
+                    (ºC)
                   </div>
-                  {temperatureAndHumidityChartData.length === 0 ? (
+                  {temperatureChartData.length === 0 ? (
                     <div className="flex justify-center items-center h-70 text-muted text-sm">
                       Nenhum registro coletado pelo totem...
                     </div>
                   ) : (
                     <div className="h-70">
                       <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart
-                          data={temperatureAndHumidityChartData}
-                          margin={{ top: 15, right: 30, left: -15, bottom: 5 }}
+                        <LineChart
+                          data={temperatureChartData}
+                          margin={{ top: 10, right: 0, left: -30, bottom: 0 }}
                         >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                          <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} stroke="#94a3b8" />
-                          <YAxis
-                            yAxisId="left"
-                            stroke="#94a3b8"
-                            label={{ value: "°C", angle: -90, position: "insideLeft" }}
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="timestamp" tick={{ fontSize: 12 }} />
+                          <YAxis />
+                          <Tooltip
+                            content={
+                              <CustomTooltip
+                                leftText={"Temperatura: "}
+                                rightTect={"ºC"}
+                              />
+                            }
                           />
-                          <YAxis
-                            yAxisId="right"
-                            orientation="right"
-                            stroke="#94a3b8"
-                            label={{ value: "%", angle: 90, position: "insideRight" }}
-                          />
-                          <Tooltip />
-                          <Legend wrapperStyle={{ paddingTop: "20px" }} />
                           <Line
-                            yAxisId="left"
                             type="monotone"
-                            dataKey="temperatura"
-                            stroke="#F59E0B"
-                            strokeWidth={3}
-                            dot={{ r: 3, fill: "#F59E0B" }}
+                            dataKey="value"
+                            stroke="#FACC15"
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
                             activeDot={{
                               r: 6,
                               style: { cursor: "pointer" },
                               onClick: () => setIsOpenImgModal(true),
                             }}
-                            isAnimationActive={true}
-                            name="Temperatura (°C)"
                           />
-                          <Line
-                            yAxisId="right"
-                            type="monotone"
-                            dataKey="umidade"
-                            stroke="#06B6D4"
-                            strokeWidth={3}
-                            dot={{ r: 3, fill: "#06B6D4" }}
-                            activeDot={{
-                              r: 6,
-                              style: { cursor: "pointer" },
-                              onClick: () => setIsOpenImgModal(true),
-                            }}
-                            isAnimationActive={true}
-                            name="Umidade (%)"
-                          />
-                        </ComposedChart>
+                        </LineChart>
                       </ResponsiveContainer>
                     </div>
                   )}
                 </div>
 
-                <div className="bg-card/80 shadow-lg p-6 border border-border rounded-3xl glow-panel">
-                  <div className="flex items-center gap-2 mb-6 font-semibold text-foreground text-lg">
-                    <BarChart2 size={18} className="text-primary" />{" "}
+                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
+                  <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
+                    <BarChart2 size={16} className="text-primary" /> Umidade (%)
+                  </div>
+                  {humidityChartData.length === 0 ? (
+                    <div className="flex justify-center items-center h-70 text-muted text-sm">
+                      Nenhum registro coletado pelo totem...
+                    </div>
+                  ) : (
+                    <div className="h-70">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={humidityChartData}
+                          margin={{ top: 10, right: 0, left: -30, bottom: 0 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="timestamp" tick={{ fontSize: 12 }} />
+                          <YAxis />
+                          <Tooltip
+                            content={
+                              <CustomTooltip
+                                leftText={"Umidade: "}
+                                rightTect={"%"}
+                              />
+                            }
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="value"
+                            stroke="#13cde6"
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
+                            activeDot={{
+                              r: 6,
+                              style: { cursor: "pointer" },
+                              onClick: () => setIsOpenImgModal(true),
+                            }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl glow-panel">
+                  <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
+                    <BarChart2 size={16} className="text-primary" />{" "}
                     Precipitação (mm)
                   </div>
                   {precipitacaoChartData.length === 0 ? (
@@ -1561,11 +1538,11 @@ export default function Dashboard() {
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                           data={precipitacaoChartData}
-                          margin={{ top: 15, right: 15, left: -15, bottom: 5 }}
+                          margin={{ top: 10, right: 0, left: -30, bottom: 0 }}
                         >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                          <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} stroke="#94a3b8" />
-                          <YAxis stroke="#94a3b8" label={{ value: "mm", angle: -90, position: "insideLeft" }} />
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="timestamp" tick={{ fontSize: 12 }} />
+                          <YAxis />
                           <Tooltip
                             content={
                               <CustomTooltip
@@ -1577,15 +1554,14 @@ export default function Dashboard() {
                           <Line
                             type="monotone"
                             dataKey="value"
-                            stroke="#10B981"
-                            strokeWidth={3}
-                            dot={{ r: 3, fill: "#10B981" }}
+                            stroke="#10b981"
+                            strokeWidth={2}
+                            dot={{ r: 4 }}
                             activeDot={{
                               r: 6,
                               style: { cursor: "pointer" },
                               onClick: () => setIsOpenImgModal(true),
                             }}
-                            isAnimationActive={true}
                           />
                         </LineChart>
                       </ResponsiveContainer>
@@ -1748,12 +1724,14 @@ export default function Dashboard() {
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart
                             data={precipitacaoChartData}
-                            margin={{ top: 15, right: 15, left: -15, bottom: 5 }}
+                            margin={{ top: 10, right: 0, left: -30, bottom: 0 }}
                           >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                            <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} stroke="#94a3b8" />
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                              dataKey="timestamp"
+                              tick={{ fontSize: 12 }}
+                            />
                             <YAxis
-                              stroke="#94a3b8"
                               label={{
                                 value: "mm",
                                 angle: -90,
@@ -1771,11 +1749,10 @@ export default function Dashboard() {
                             <Line
                               type="monotone"
                               dataKey="value"
-                              stroke="#10B981"
-                              strokeWidth={3}
-                              dot={{ r: 3, fill: "#10B981" }}
+                              stroke="#10b981"
+                              strokeWidth={2}
+                              dot={{ r: 4 }}
                               activeDot={{ r: 6 }}
-                              isAnimationActive={true}
                             />
                           </LineChart>
                         </ResponsiveContainer>
@@ -1785,8 +1762,8 @@ export default function Dashboard() {
 
                   <section className="bg-card/80 shadow-lg p-5 border border-border rounded-3xl overflow-hidden glow-panel">
                     <div className="flex items-center gap-2 mb-4 font-semibold text-foreground text-sm">
-                      <AlertCircle size={16} className="text-primary" /> Dias com
-                      maior precipitação
+                      <AlertCircle size={16} className="text-primary" /> Dias
+                      com maior precipitação
                     </div>
                     <div className="overflow-x-auto">
                       <table className="min-w-full text-sm">
@@ -1794,7 +1771,9 @@ export default function Dashboard() {
                           <tr className="border-border border-b text-muted text-left uppercase">
                             <th className="py-3 pr-4">Data</th>
                             <th className="py-3 pr-4 text-right">Total (mm)</th>
-                            <th className="py-3 pr-4 text-right">Ocorrências</th>
+                            <th className="py-3 pr-4 text-right">
+                              Ocorrências
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
